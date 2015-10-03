@@ -12,7 +12,7 @@
 #define BUFLEN 512  //Max length of buffer
 #define PORT 8888   //The port on which to send data
  
-void die(char *s)
+void _die(char *s)
 {
     perror(s);
     exit(1);
@@ -27,7 +27,7 @@ int clientUdpStart(void)
  
     if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        die("socket");
+        _die("socket");
     }
  
     memset((char *) &si_other, 0, sizeof(si_other));
@@ -49,7 +49,7 @@ int clientUdpStart(void)
         //send the message
         if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
         {
-            die("sendto()");
+            _die("sendto()");
         }
          
         //receive a reply and print it
@@ -58,7 +58,7 @@ int clientUdpStart(void)
         //try to receive some data, this is a blocking call
         if (recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen) == -1)
         {
-            die("recvfrom()");
+            _die("recvfrom()");
         }
          
         puts(buf);

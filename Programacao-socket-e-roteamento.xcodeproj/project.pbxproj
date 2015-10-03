@@ -12,7 +12,6 @@
 		3022E3841BBE239700751AA2 /* client-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E37F1BBE239700751AA2 /* client-udp.c */; };
 		3022E3851BBE239700751AA2 /* server-tcp.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E3801BBE239700751AA2 /* server-tcp.c */; };
 		3022E3861BBE239700751AA2 /* server-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E3811BBE239700751AA2 /* server-udp.c */; };
-		3022E3871BBE239700751AA2 /* thread.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E3821BBE239700751AA2 /* thread.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -35,7 +34,6 @@
 		3022E37F1BBE239700751AA2 /* client-udp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "client-udp.c"; sourceTree = "<group>"; };
 		3022E3801BBE239700751AA2 /* server-tcp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "server-tcp.c"; sourceTree = "<group>"; };
 		3022E3811BBE239700751AA2 /* server-udp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "server-udp.c"; sourceTree = "<group>"; };
-		3022E3821BBE239700751AA2 /* thread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = thread.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,7 +72,6 @@
 				3022E37F1BBE239700751AA2 /* client-udp.c */,
 				3022E3801BBE239700751AA2 /* server-tcp.c */,
 				3022E3811BBE239700751AA2 /* server-udp.c */,
-				3022E3821BBE239700751AA2 /* thread.c */,
 			);
 			path = "Programacao-socket-e-roteamento";
 			sourceTree = "<group>";
@@ -140,7 +137,6 @@
 				3022E3831BBE239700751AA2 /* client-tcp.c in Sources */,
 				3022E3841BBE239700751AA2 /* client-udp.c in Sources */,
 				3022E36B1BBE18E000751AA2 /* main.c in Sources */,
-				3022E3871BBE239700751AA2 /* thread.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,6 +255,7 @@
 				3022E3701BBE18E000751AA2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
