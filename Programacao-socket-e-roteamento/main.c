@@ -20,8 +20,8 @@ int main(int argc, const char * argv[]) {
     char *new_str;
     asprintf(&new_str,"%s%s",argv[0],PATH_ROUTER_FILE);
     
-#if defined(_AIX)
-    printf("UNIX");
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+    printf("Mac");
 #endif
     
     printf("Hello there! Executing from: \n %s \n",new_str);
