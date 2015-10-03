@@ -8,6 +8,12 @@
 
 #ifndef Programacao_socket_e_roteamento_Defaults_h
 #define Programacao_socket_e_roteamento_Defaults_h
+
+#include <stdio.h>
 #include <string.h>
+
+
+#define PATH_ROUTER_FILE "/roteador.config"
+#define PATH_LINKS_FILE "/enlaces.config"
 
 #endif
