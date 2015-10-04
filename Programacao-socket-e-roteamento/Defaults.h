@@ -11,9 +11,25 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
+#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
-#define PATH_ROUTER_FILE "/roteador.config"
-#define PATH_LINKS_FILE "/enlaces.config"
+#define MAX_ROUTERS 256
+#define MAX_LINKS 256
+
+typedef struct router{
+    int id;
+    int port;
+    char ip[15];
+}router;
+
+typedef struct linkr{
+    int from;
+    int to;
+    int cost;
+}linkr;
+
 
 #endif
