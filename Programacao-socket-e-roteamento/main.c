@@ -54,9 +54,21 @@ int main(int argc, const char * argv[]) {
 //    clientUdpStart();
 
     
-    RouterUp r;
-    r=initUpClient(r);
-    sendMessage(r);
-    closeUp(r);
+//    RouterUp r;
+//    r=initUpClient(r);
+//    
+//    while (1) {
+//        printf("msg: ");
+//        scanf("%s",r.message);
+//        sendMessage(r);
+//    }
+    
+    
+    //    closeUp(r);
+    
+    RouterDown down;
+    down = initDownClient(down);
+    startDownListen(down);
+//    closeDown(down);
     return 0;
 }

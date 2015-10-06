@@ -16,7 +16,7 @@
 #include<sys/socket.h>
 
 #define BUFLEN 512  //Max length of buffer
-#define PORT 8888   //The port on which to listen for incoming data
+#define PORT_RECEIVE 8888   //The port on which to listen for incoming data
 
 void die(char *s);
 int serverUdpStart(void);
