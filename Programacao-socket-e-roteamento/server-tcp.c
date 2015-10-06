@@ -1,16 +1,7 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <time.h> 
+#include "server-tcp.h"
 
-int serverTcpStart(int argc, char *argv[])
-{
+void serverTcpStart(){
+
     int listenfd = 0, connfd = 0;
     struct sockaddr_in serv_addr; 
 

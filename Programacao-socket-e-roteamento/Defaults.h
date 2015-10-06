@@ -31,5 +31,9 @@ typedef struct linkr{
     int cost;
 }linkr;
 
+typedef struct package{
+    char msg[100];
+    char to[15];
+}package;
 
 #endif

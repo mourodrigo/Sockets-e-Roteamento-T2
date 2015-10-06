@@ -13,6 +13,7 @@
 		3022E3851BBE239700751AA2 /* server-tcp.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E3801BBE239700751AA2 /* server-tcp.c */; };
 		3022E3861BBE239700751AA2 /* server-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E3811BBE239700751AA2 /* server-udp.c */; };
 		3069C66B1BC060F20028DBFC /* FileIO.c in Sources */ = {isa = PBXBuildFile; fileRef = 3069C6691BC060F20028DBFC /* FileIO.c */; };
+		3069C66E1BC191870028DBFC /* Dijkstra.c in Sources */ = {isa = PBXBuildFile; fileRef = 3069C66C1BC191870028DBFC /* Dijkstra.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -37,6 +38,13 @@
 		3022E3811BBE239700751AA2 /* server-udp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "server-udp.c"; sourceTree = "<group>"; };
 		3069C6691BC060F20028DBFC /* FileIO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FileIO.c; sourceTree = "<group>"; };
 		3069C66A1BC060F20028DBFC /* FileIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileIO.h; sourceTree = "<group>"; };
+		3069C66C1BC191870028DBFC /* Dijkstra.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Dijkstra.c; sourceTree = "<group>"; };
+		3069C66D1BC191870028DBFC /* Dijkstra.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Dijkstra.h; sourceTree = "<group>"; };
+		30B571D91BC36D8000C376AA /* server-tcp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "server-tcp.h"; sourceTree = "<group>"; };
+		30B571DA1BC3705800C376AA /* client-udp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "client-udp.h"; sourceTree = "<group>"; };
+		30B571DB1BC3709B00C376AA /* client-tcp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "client-tcp.h"; sourceTree = "<group>"; };
+		30B571DC1BC3712400C376AA /* server-udp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "server-udp.h"; sourceTree = "<group>"; };
+		30B571DD1BC3762000C376AA /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,13 +78,20 @@
 			isa = PBXGroup;
 			children = (
 				3022E36A1BBE18E000751AA2 /* main.c */,
+				30B571DD1BC3762000C376AA /* main.h */,
+				3069C66C1BC191870028DBFC /* Dijkstra.c */,
+				3069C66D1BC191870028DBFC /* Dijkstra.h */,
 				3069C6691BC060F20028DBFC /* FileIO.c */,
 				3069C66A1BC060F20028DBFC /* FileIO.h */,
 				3022E3711BBE1A6000751AA2 /* Defaults.h */,
 				3022E37E1BBE239700751AA2 /* client-tcp.c */,
+				30B571DB1BC3709B00C376AA /* client-tcp.h */,
 				3022E37F1BBE239700751AA2 /* client-udp.c */,
+				30B571DA1BC3705800C376AA /* client-udp.h */,
 				3022E3801BBE239700751AA2 /* server-tcp.c */,
+				30B571D91BC36D8000C376AA /* server-tcp.h */,
 				3022E3811BBE239700751AA2 /* server-udp.c */,
+				30B571DC1BC3712400C376AA /* server-udp.h */,
 			);
 			path = "Programacao-socket-e-roteamento";
 			sourceTree = "<group>";
@@ -137,6 +152,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3069C66E1BC191870028DBFC /* Dijkstra.c in Sources */,
 				3022E3861BBE239700751AA2 /* server-udp.c in Sources */,
 				3022E3851BBE239700751AA2 /* server-tcp.c in Sources */,
 				3069C66B1BC060F20028DBFC /* FileIO.c in Sources */,

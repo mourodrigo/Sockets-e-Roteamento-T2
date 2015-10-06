@@ -6,8 +6,7 @@
 //  Copyright (c) 2015 mourodrigo. All rights reserved.
 //
 
-#include "Defaults.h"
-#include "FileIO.h"
+#include "main.h"
 
 int routerCount,linkCount;
 
@@ -17,6 +16,10 @@ void printRouter(router r){
 void printlink(linkr l){
     printf("FROM: %d | TO: %d | COST: %d\n",l.from,l.to,l.cost);
 }
+
+//int getIndexOfRouter(router r, struct router routers[MAX_ROUTERS]){
+//    
+//}
 
 int main(int argc, const char * argv[]) {
     // insert code here...
@@ -43,10 +46,11 @@ int main(int argc, const char * argv[]) {
     for (int x=0; x<linkCount; x++) {
         printlink(links[x]);
     }
-    
-    
-    
-    
-    
+
+//    add_links(linkCount, links);
+//    startDijkstra();
+//    
+//    serverTcpStart();
+    clientUdpStart();
     return 0;
 }

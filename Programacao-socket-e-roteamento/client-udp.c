@@ -2,17 +2,10 @@
     Simple udp client
     Silver Moon (m00n.silv3r@gmail.com)
 */
-#include<stdio.h> //printf
-#include<string.h> //memset
-#include<stdlib.h> //exit(0);
-#include<arpa/inet.h>
-#include<sys/socket.h>
- 
-#define SERVER "127.0.0.1"
-#define BUFLEN 512  //Max length of buffer
-#define PORT 8888   //The port on which to send data
- 
-void _die(char *s)
+
+#include "client-udp.h"
+
+void __die(char *s)
 {
     perror(s);
     exit(1);
@@ -27,7 +20,7 @@ int clientUdpStart(void)
  
     if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        _die("socket");
+        __die("socket");
     }
  
     memset((char *) &si_other, 0, sizeof(si_other));
@@ -49,7 +42,7 @@ int clientUdpStart(void)
         //send the message
         if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
         {
-            _die("sendto()");
+            __die("sendto()");
         }
          
         //receive a reply and print it
@@ -58,7 +51,7 @@ int clientUdpStart(void)
         //try to receive some data, this is a blocking call
         if (recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen) == -1)
         {
-            _die("recvfrom()");
+            __die("recvfrom()");
         }
          
         puts(buf);
