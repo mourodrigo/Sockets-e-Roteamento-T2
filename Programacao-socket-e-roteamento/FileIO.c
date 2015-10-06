@@ -61,13 +61,18 @@ int readRouters(char filepath[],struct router routers[MAX_ROUTERS]){
     char line[80];
     FILE *fr;
 
+#ifdef DEBUG_LEVEL_2
     printf ("Reading file path %s \n", filepath);
+#endif
     
     fr = fopen (filepath, "r");
     
     int indx = 0;
     while(fgets(line, 240, fr) != NULL)
     {
+#ifdef DEBUG_LEVEL_3
+        printf("Read Router link %s",line);
+#endif
         char** tokens;
         router r;
         tokens = str_split(line, ' ');
@@ -88,15 +93,18 @@ int readLinks(char filepath[],struct linkr links[MAX_LINKS]){
     char line[80];
     FILE *fr;
     
+#ifdef DEBUG_LEVEL_2
     printf ("Reading file path %s \n", filepath);
+#endif
     
     fr = fopen (filepath, "r");
     
     int indx = 0;
     while(fgets(line, 240, fr) != NULL)
     {
-        printf("%s",line);
-
+#ifdef DEBUG_LEVEL_3
+        printf("Read link %s",line);
+#endif
         char** tokens;
         linkr l;
         tokens = str_split(line, ' ');

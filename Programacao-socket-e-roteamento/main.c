@@ -51,6 +51,12 @@ int main(int argc, const char * argv[]) {
 //    startDijkstra();
 //    
 //    serverTcpStart();
-    clientUdpStart();
+//    clientUdpStart();
+
+    
+    RouterUp r;
+    r=initUpClient(r);
+    sendMessage(r);
+    closeUp(r);
     return 0;
 }

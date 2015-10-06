@@ -19,6 +19,11 @@
 #define MAX_ROUTERS 256
 #define MAX_LINKS 256
 
+#define DEBUG_LEVEL_1
+#define DEBUG_LEVEL_2
+#define DEBUG_LEVEL_3
+#define DEBUG_LEVEL_4
+
 typedef struct router{
     int id;
     int port;

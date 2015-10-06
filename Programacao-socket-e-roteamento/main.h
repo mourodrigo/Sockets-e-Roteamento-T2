@@ -13,10 +13,12 @@
 #include "FileIO.h"
 #include "Dijkstra.h"
 
-#include "server-tcp.h"
-#include "server-udp.h"
-#include "client-tcp.h"
-#include "client-udp.h"
+//#include "server-tcp.h"
+//#include "server-udp.h"
+//#include "client-tcp.h"
+//#include "client-udp.h"
+
+#include "RouterIO.h"
 
 void printRouter(router r);
 void printlink(linkr l);
