@@ -21,6 +21,7 @@ void printlink(linkr l){
 //    
 //}
 
+
 int main(int argc, const char * argv[]) {
     // insert code here...
 
@@ -69,6 +70,7 @@ int main(int argc, const char * argv[]) {
     RouterDown down;
     down = initDownClient(down);
     startDownListen(down);
-//    closeDown(down);
+    closeDown(down);
+
     return 0;
 }

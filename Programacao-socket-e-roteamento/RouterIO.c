@@ -75,6 +75,8 @@ void closeUp(RouterUp up){
 
 RouterDown initDownClient(RouterDown down){
     
+    down.slen = sizeof(down.si_other);
+    
     //create a UDP socket
     if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
