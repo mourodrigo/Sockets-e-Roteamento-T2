@@ -76,8 +76,8 @@ int readRouters(char filepath[],struct router routers[MAX_ROUTERS]){
         char** tokens;
         router r;
         tokens = str_split(line, ' ');
-        r.id = (int)tokens[0];
-        r.port = (int)tokens[1];
+        r.id = atoi(tokens[0]);
+        r.port = atoi(tokens[1]);
         strcpy(r.ip, tokens[2]);
         
         routers[indx]=r;

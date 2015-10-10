@@ -32,6 +32,8 @@
 		3022E3711BBE1A6000751AA2 /* Defaults.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Defaults.h; sourceTree = "<group>"; };
 		305A3F9E1BC98C3F00427579 /* Chat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Chat.c; sourceTree = "<group>"; };
 		305A3F9F1BC98C3F00427579 /* Chat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Chat.h; sourceTree = "<group>"; };
+		305A3FA11BC9AF1D00427579 /* enlaces.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = enlaces.config; sourceTree = "<group>"; };
+		305A3FA21BC9AF1D00427579 /* roteador.config */ = {isa = PBXFileReference; lastKnownFileType = text; path = roteador.config; sourceTree = "<group>"; };
 		3069C6691BC060F20028DBFC /* FileIO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FileIO.c; sourceTree = "<group>"; };
 		3069C66A1BC060F20028DBFC /* FileIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileIO.h; sourceTree = "<group>"; };
 		3069C66C1BC191870028DBFC /* Dijkstra.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Dijkstra.c; sourceTree = "<group>"; };
@@ -82,6 +84,8 @@
 				3022E3711BBE1A6000751AA2 /* Defaults.h */,
 				30B571DE1BC37A2200C376AA /* RouterIO.c */,
 				30B571DF1BC37A2200C376AA /* RouterIO.h */,
+				305A3FA11BC9AF1D00427579 /* enlaces.config */,
+				305A3FA21BC9AF1D00427579 /* roteador.config */,
 			);
 			path = "Programacao-socket-e-roteamento";
 			sourceTree = "<group>";
