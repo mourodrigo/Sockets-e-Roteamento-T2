@@ -165,7 +165,7 @@ void startDownListen(){
     while(1)
     {
 #ifdef DEBUG_LEVEL_3
-        printf("Router %d listening for data\n",_down.idNumber);
+        printf("Router %d listening for data on port %d\n",_down.idNumber,_down.port);
 #endif
         fflush(stdout);
         //receive a reply and print it
@@ -234,9 +234,9 @@ void printLinks(linkr l[linkCount]){
 
 void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS]){
 
-    printf("\n\n=========================\\n\n");
-    printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\\n\n");
-    printf("\n\n=========================\\n\n");
+    printf("\n\n=========================\n\n");
+    printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
+    printf("OPÇÃO: ");
     int option=-1;
     while (option!=0) {
         scanf("%d",&option);
@@ -289,22 +289,48 @@ int main(int argc, const char * argv[]) {
         self.download.port = self_router.port;
         self.idNumber = self.download.idNumber = self_router.id;
         
-        sleep(1);
+        //SINGLETON FOR DOWNLOAD/LISTENING DATA
         pthread_t download_Singleton = prepareForDownload(self.download);
-        self.upload=initUpClient(self.upload);
+
+
+        if (strcmp(argv[2], "v")==0) {
+            sleep(1); //preparation for singleton init
+            interface(routers, links);
+        }else{
+            printf("INIATING ROUTING MODE ID: %s \n",argv[1]);
+        }
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+//        self.upload=initUpClient(self.upload);
 
         
         //        startDownListen();
     //    strcpy(up.destination_IP, destination_IP);
         
-        while (1) {
-            
-            printf("\nmsg: ");
-            scanf("%s",self.upload.message);
-            sendMessage(self.upload);
-//            sleep(1);
-        }
+
+        
+        
+//        while (1) {
+//            
+//            printf("\nmsg: ");
+//            scanf("%s",self.upload.message);
+//            sendMessage(self.upload);
+////            sleep(1);
+//        }
     
+        
+        
+//        closeDown(_down);
+//        
         //    add_links(linkCount, links);
         //    startDijkstra();
         //
