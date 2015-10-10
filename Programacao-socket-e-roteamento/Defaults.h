@@ -12,7 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <pthread.h>
+#include "Chat.h"
 #define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
 #define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 

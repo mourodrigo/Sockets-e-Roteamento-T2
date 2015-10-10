@@ -23,9 +23,12 @@
 #include <sys/types.h>
 #include <time.h>
 
+
 #include "Defaults.h"
 
-#define SERVER "127.0.0.1"
+#pragma mark - BASIC CONFIG
+
+//#define SERVER "127.0.0.1"
 #define BUFLEN 512  //Max length of buffer
 #define PORT 8888   //The port on which to send data
 #define PORT_RECEIVE 8888   //The port on which to listen for incoming data
@@ -33,13 +36,15 @@
 #pragma mark - MESSAGE SENDING
 
 typedef struct RouterUp{
+    int idNumber;
     struct sockaddr_in si_other;
     int s, slen;//=sizeof(si_other);
     char buf[BUFLEN];
     char message[BUFLEN];
+    char destination_IP[15];
 }RouterUp;
 
-RouterUp initUpClient(RouterUp up);
+RouterUp initUpClient(RouterUp up,char destination_IP[15]);
 void sendMessage(RouterUp up);
 void closeUp(RouterUp up);
 void muerte(char *s);
@@ -47,14 +52,26 @@ void muerte(char *s);
 #pragma mark - MESSAGE RECEIVING
 
 typedef struct RouterDown{
+    int idNumber;
     struct sockaddr_in si_me, si_other;
-    
     int s, i, recv_len,slen;// = sizeof(si_other) , ;
     char buf[BUFLEN];
+    
 }RouterDown;
 
 RouterDown initDownClient(RouterDown down);
-void startDownListen(RouterDown down);
+void startDownListen();
 void routerDidReceiveMessage(char message[1025]);
 void closeDown(RouterDown down);
+pthread_t prepareForDownload(RouterDown down);
+#pragma mark - ROUTER ASSEMBLY
+
+typedef struct SelfRouter{
+    int idNumber;
+    RouterUp upload;
+    RouterDown download;
+}SelfRouter;
+
+
+
 #endif /* defined(____RouterIO__) */

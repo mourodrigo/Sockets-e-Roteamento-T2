@@ -7,6 +7,7 @@
 //
 
 #include "RouterIO.h"
+RouterDown _down;
 
 void muerte(char *s)
 {
@@ -14,7 +15,11 @@ void muerte(char *s)
     exit(1);
 }
 
-RouterUp initUpClient(RouterUp up){
+//======================================================
+#pragma mark - UPLOAD
+//======================================================
+
+RouterUp initUpClient(RouterUp up,char destination_IP[15]){
 
 //    if (!up.slen) {
 #ifdef DEBUG_LEVEL_3
@@ -30,8 +35,10 @@ RouterUp initUpClient(RouterUp up){
         memset((char *) &up.si_other, 0, sizeof(up.si_other));
         up.si_other.sin_family = AF_INET;
         up.si_other.sin_port = htons(PORT);
-        
-        if (inet_aton(SERVER , &up.si_other.sin_addr) == 0)
+    
+        strcpy(up.destination_IP, destination_IP);
+    
+        if (inet_aton(up.destination_IP , &up.si_other.sin_addr) == 0)
         {
             fprintf(stderr, "inet_aton() failed\n");
             exit(1);
@@ -42,25 +49,24 @@ RouterUp initUpClient(RouterUp up){
 }
 void sendMessage(RouterUp up){
     
-//        printf("Enter message : ");
-        //gets(message);
-//        scanf("%s",up.message);
-        //send the message
         if (sendto(up.s, up.message, strlen(up.message) , 0 , (struct sockaddr *) &up.si_other, up.slen)==-1)
         {
             muerte("sendto()");
         }
         
-        //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
-        memset(up.buf,'\0', BUFLEN);
-        //try to receive some data, this is a blocking call
-        if (recvfrom(up.s, up.buf, BUFLEN, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
-        {
-            muerte("recvfrom()");
-        }
-        
-        puts(up.buf);
+//        //receive a reply and print it
+//        //clear the buffer by filling null, it might have previously received data
+//        memset(up.buf,'\0', BUFLEN);
+//
+//        //try to receive some data, this is a blocking call
+//        if (recvfrom(up.s, up.buf, BUFLEN, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
+//        {
+//            muerte("recvfrom()");
+//        }
+    
+#ifdef DEBUG_LEVEL_3
+    printf("Confirmação de recebimento: %s",up.buf);
+#endif
     
 }
 
@@ -72,6 +78,19 @@ void closeUp(RouterUp up){
 }
 
 
+//======================================================
+#pragma mark - DOWNLOAD
+//======================================================
+
+pthread_t prepareForDownload(RouterDown down){
+    _down = initDownClient(down);
+    pthread_t download_Singleton;
+
+    pthread_create(&download_Singleton, NULL, startDownListen, (void*)&down);
+
+//    startDownListen(down);
+    return download_Singleton;
+}
 
 RouterDown initDownClient(RouterDown down){
     
@@ -108,28 +127,31 @@ void routerDidReceiveMessage(char message[1025]){
     
 }
 
-void startDownListen(RouterDown down){
-    //keep listening for data
+void startDownListen(){
+    
+   //keep listening for data
     while(1)
     {
-        printf("Waiting for data...");
+#ifdef DEBUG_LEVEL_3
+        printf("Router %d listening for data\n",_down.idNumber);
+#endif
         fflush(stdout);
         //receive a reply and print it
         //clear the buffer by filling null, it might have previously received data
-        memset(down.buf,'\0', BUFLEN);
+        memset(_down.buf,'\0', BUFLEN);
         
         //try to receive some data, this is a blocking call
-        if ((down.recv_len = recvfrom(down.s, down.buf, BUFLEN, 0, (struct sockaddr *) &down.si_other, &down.slen)) == -1)
+        if ((_down.recv_len = recvfrom(_down.s, _down.buf, BUFLEN, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
         {
             muerte("recvfrom()");
         }
         
         //print details of the client/peer and the data received
-        printf("Received packet from %s:%d\n", inet_ntoa(down.si_other.sin_addr), ntohs(down.si_other.sin_port));
-        printf("Data: %s\n" , down.buf);
+        printf("Received packet from %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
+        printf("Data: %s\n" , _down.buf);
         
         //now reply the client with the same data
-        if (sendto(down.s, down.buf, down.recv_len, 0, (struct sockaddr*) &down.si_other, down.slen) == -1)
+        if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
         {
             muerte("sendto()");
         }
@@ -143,4 +165,6 @@ void closeDown(RouterDown down){
     printf("Down Client Closed\n");
 #endif
 }
+
+
 
