@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "Chat.h"
+
 #define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
 #define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
@@ -24,6 +24,9 @@
 #define DEBUG_LEVEL_2
 #define DEBUG_LEVEL_3
 #define DEBUG_LEVEL_4
+
+#define MAX_PACKAGE_SIZE 999999
+#define MAX_USER_MSG_SIZE 1000
 
 typedef struct router{
     int id;

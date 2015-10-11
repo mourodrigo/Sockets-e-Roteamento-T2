@@ -29,8 +29,8 @@
 #pragma mark - BASIC CONFIG
 
 //#define SERVER "127.0.0.1"ç
-#define BUFLEN 512  //Max length of buffer
-//#define PORT 8888   //The port on which to send data
+//#define BUFLEN 512  //Max length of buffer
+#define SEND_PORT 8888   //The port on which to send data
 //#define PORT_RECEIVE 8888   //The port on which to listen for incoming data
 
 #pragma mark - MESSAGE SENDING
@@ -38,8 +38,8 @@
 typedef struct RouterUp{
     struct sockaddr_in si_other;
     int s, slen,port,idNumber;//=sizeof(si_other);
-    char buf[BUFLEN];
-    char message[BUFLEN];
+    char buf[MAX_USER_MSG_SIZE];
+    char message[MAX_USER_MSG_SIZE];
     char destination_IP[15];
 }RouterUp;
 
@@ -53,7 +53,7 @@ void muerte(char *s);
 typedef struct RouterDown{
     struct sockaddr_in si_me, si_other;
     int s, i, recv_len,slen,port,idNumber;// = sizeof(si_other) , ;
-    char buf[BUFLEN];
+    char buf[MAX_USER_MSG_SIZE];
     
 }RouterDown;
 

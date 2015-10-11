@@ -83,10 +83,10 @@ void sendMessage(RouterUp up){
     
     //receive a reply and print it
     //clear the buffer by filling null, it might have previously received data
-    memset(up.buf,'\0', BUFLEN);
+    memset(up.buf,'\0', MAX_USER_MSG_SIZE);
     
     //try to receive some data, this is a blocking call
-    if (recvfrom(up.s, up.buf, BUFLEN, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
+    if (recvfrom(up.s, up.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
     {
         muerte("recvfrom()");
     }
@@ -162,18 +162,18 @@ RouterDown initDownClient(RouterDown down){
 void startDownListen(){
     
     //keep listening for data
+#ifdef DEBUG_LEVEL_3
+    printf("Router %d listening for data on port %d\n",_down.idNumber,_down.port);
+#endif
     while(1)
     {
-#ifdef DEBUG_LEVEL_3
-        printf("Router %d listening for data on port %d\n",_down.idNumber,_down.port);
-#endif
         fflush(stdout);
         //receive a reply and print it
         //clear the buffer by filling null, it might have previously received data
-        memset(_down.buf,'\0', BUFLEN);
+        memset(_down.buf,'\0', MAX_USER_MSG_SIZE);
         
         //try to receive some data, this is a blocking call
-        if ((_down.recv_len = recvfrom(_down.s, _down.buf, BUFLEN, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
+        if ((_down.recv_len = recvfrom(_down.s, _down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
         {
             muerte("recvfrom()");
         }
@@ -232,7 +232,41 @@ void printLinks(linkr l[linkCount]){
     }
 }
 
-void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS]){
+router chooseDestination(struct router routers[MAX_ROUTERS]){
+    printRouters(routers);
+    router r;
+    r.id=-1;
+    while (r.id<0) {
+        
+        printf("\nEscolha o id do destinatário: ");
+        int indx;
+        scanf("%d",&indx);
+        r=routerOfIndex(indx, routers);
+    }
+    return r;
+}
+
+void chat(struct router destination,SelfRouter self_router){
+
+    RouterUp request;
+    char message[MAX_USER_MSG_SIZE];
+    request= upRequest(destination, message);
+    request=initUpClient(request);
+    sleep(1);
+    while (1) {
+        
+        printf("\nmsg: ");
+        scanf("%s",message);
+        strcpy(request.message, message);
+        sendMessage(request);
+        //        //            sleep(1);
+    }
+    
+//    upRequest(destination, <#char *message#>)
+};
+
+
+void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS],SelfRouter self_router){
 
     printf("\n\n=========================\n\n");
     printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
@@ -240,9 +274,11 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS])
     int option=-1;
     while (option!=0) {
         scanf("%d",&option);
+        router r;
         switch (option) {
-            case 1:
-                chat();
+                case 1:
+                r = chooseDestination(routers);
+                chat(r,self_router);
                 break;
             case 2:
                 printLinks(links);
@@ -256,7 +292,14 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS])
 }
 
 
-
+RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
+    RouterUp request;
+    strcpy(request.destination_IP, destination.ip);
+    request.idNumber = destination.id;
+    request.port = SEND_PORT;
+    strcpy(request.message, message);
+    return request;
+}
 
 
 
@@ -273,7 +316,7 @@ int main(int argc, const char * argv[]) {
     if (argc<2) {
             printf("\n Usage: ./main <router id>\n");
     }else{
-        printf("INIATING ROUTER ID: %s \n",argv[1]);
+//        printf("STARTING ROUTER ID: %s \n",argv[1]);
         
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
@@ -295,9 +338,9 @@ int main(int argc, const char * argv[]) {
 
         if (strcmp(argv[2], "v")==0) {
             sleep(1); //preparation for singleton init
-            interface(routers, links);
+            interface(routers, links,self);
         }else{
-            printf("INIATING ROUTING MODE ID: %s \n",argv[1]);
+            printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
         }
 
         
