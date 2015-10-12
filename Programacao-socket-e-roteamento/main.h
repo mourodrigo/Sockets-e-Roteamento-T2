@@ -25,4 +25,5 @@ void printlink(linkr l);
 int main(int argc, const char * argv[]);
 //void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS],SelfRouter self_router);
 RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]);
+char * getHeader(linkr l,struct router routers[MAX_ROUTERS]);
 #endif

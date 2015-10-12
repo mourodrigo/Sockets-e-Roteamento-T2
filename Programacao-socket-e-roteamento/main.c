@@ -43,7 +43,7 @@ char * routerToString(router r){
     asprintf(&router_str,"%d@%s",r.id,replace(r.ip, "\n", ""));
     
     char *router_str_with_port;
-    asprintf(&router_str_with_port,"%s:%d|",router_str,r.port);
+    asprintf(&router_str_with_port,"%s:%d",router_str,r.port);
     return router_str_with_port;
 }
 
@@ -254,7 +254,7 @@ void printLinks(linkr l[linkCount]){
     }
 }
 
-router chooseDestination(struct router routers[MAX_ROUTERS]){
+router chooseDestination(SelfRouter self_router, struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS]){
     printRouters(routers);
     router r;
     r.id=-1;
@@ -268,19 +268,26 @@ router chooseDestination(struct router routers[MAX_ROUTERS]){
     return r;
 }
 
-void chat(struct router destination,SelfRouter self_router){
+void chat(struct router destination_router,struct linkr router_path,SelfRouter self_router,struct router routers[MAX_ROUTERS]){
 
     RouterUp request;
     char message[MAX_USER_MSG_SIZE];
-    request= upRequest(destination, message);
+    request= upRequest(destination_router, message);
     request=initUpClient(request);
+    char header[MAX_HEADER_SIZE];
+    char *content;
+    
+    strcpy(header, getHeader(router_path, routers));
+
     sleep(1);
     while (1) {
         
         printf("\nmsg: ");
         scanf("%s",message);
         
-        strcpy(request.message, message);
+        asprintf(&content,"%s%s",header,message);
+        
+        strcpy(request.message, content);
         sendMessage(request);
     }
     
@@ -288,7 +295,7 @@ void chat(struct router destination,SelfRouter self_router){
 };
 
 
-void interface(struct router routers[MAX_ROUTERS]/*,struct linkr links[MAX_LINKS]*/,SelfRouter self_router){
+void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS],SelfRouter self_router){
 
     printf("\n\n=========================\n\n");
     printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
@@ -296,11 +303,14 @@ void interface(struct router routers[MAX_ROUTERS]/*,struct linkr links[MAX_LINKS
     int option=-1;
     while (option!=0) {
         scanf("%d",&option);
+        linkr l;
         router r;
+        
         switch (option) {
                 case 1:
-                r = chooseDestination(routers);
-                chat(r,self_router);
+                r = chooseDestination(self_router, routers, linkGraph);
+                l = linkGraph[self_router.idNumber][r.id];
+                chat(r, l, self_router,routers);
                 break;
             case 2:
 //                printLinks(links);
@@ -333,18 +343,22 @@ RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
 #pragma mark - MAIN
 //========================================
 
-char * composeHeader(linkr l,struct router routers[MAX_ROUTERS]){
+char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
     char *line="";
 
     char** tokens;
 
-    char *path_to_split;
+    char *path_to_split[MAX_ROUTERS];
     strcpy(path_to_split, l.path);
     tokens = str_split(path_to_split, '-');
 
-    for (int x = 0; l.nodes; x++) {
+    for (int x = 0; x<=l.nodes ; x++) {
         router r = routerOfIndex(atoi(tokens[x]), routers);
-        asprintf(&line,"%s%s",line,routerToString(r));
+        if (!x) {
+            asprintf(&line,"%s%s~",line,routerToString(r));
+        }else{
+            asprintf(&line,"%s%s|",line,routerToString(r));
+        }
     }
 
     return line;
@@ -387,12 +401,13 @@ int main(int argc, const char * argv[]) {
         prepareRoutingPaths(linkGraph);
 //
         
-        composeHeader(linkGraph[2][6],routers);
+//        getHeader(linkGraph[2][6],routers);
         
         
         if (strcmp(argv[2], "v")==0) {
             sleep(1); //preparation for singleton init
-            interface(routers/*, links*/,self);
+            interface(routers, linkGraph, self);
+            //interface(routers/*, links*/,self);
         }else{
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
         }

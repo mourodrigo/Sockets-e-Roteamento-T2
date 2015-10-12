@@ -28,6 +28,7 @@
 #define MAX_PACKAGE_SIZE 999999
 #define MAX_USER_MSG_SIZE 1000
 #define MAX_PATH_STRING_SIZE 1000
+#define MAX_HEADER_SIZE 256
 
 typedef struct router{
     int id;
