@@ -364,9 +364,6 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
             asprintf(&line,"%s%s|",line,routerToString(r));
         }
     }
-    free(line);
-    free(tokens);
-    free(path_to_split);
 
     return line;
     //    r.id = atoi(tokens[0]);
