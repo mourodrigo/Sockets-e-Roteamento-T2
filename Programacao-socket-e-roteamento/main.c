@@ -346,6 +346,10 @@ int main(int argc, const char * argv[]) {
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
 //
+        
+        
+        
+        
         if (strcmp(argv[2], "v")==0) {
             sleep(1); //preparation for singleton init
             interface(routers/*, links*/,self);
@@ -353,6 +357,10 @@ int main(int argc, const char * argv[]) {
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
         }
 
+        
+        
+
+        
         
         
         

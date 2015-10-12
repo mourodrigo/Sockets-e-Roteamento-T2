@@ -108,15 +108,15 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
             if (i==cont) {
                 asprintf(&tmppath,"%s%d",path,tmp[i-1]);
             }else{
-                asprintf(&tmppath,"%s->%d",path,tmp[i-1]);
+                asprintf(&tmppath,"%s-%d",path,tmp[i-1]);
             }
             printf("%d->", tmp[i-1]);
             asprintf(&path,"%s%s",tmppath,"");
         }
         
         char *tmppath;
-        asprintf(&tmppath,"%s->%d",path,destino);
-        printf("%d->", tmp[i-1]);
+        asprintf(&tmppath,"%s-%d",path,destino);
+        printf("%d-", tmp[i-1]);
         asprintf(&path,"%s%s",tmppath,"");
 
         
