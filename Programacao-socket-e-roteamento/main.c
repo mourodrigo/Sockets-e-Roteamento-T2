@@ -38,10 +38,31 @@ router routerOfIndex(int indx, router r[routerCount]){
 }
 
 
+char * routerToString(router r){
+    char *router_str;
+    asprintf(&router_str,"%d@%s",r.id,replace(r.ip, "\n", ""));
+    
+    char *router_str_with_port;
+    asprintf(&router_str_with_port,"%s:%d|",router_str,r.port);
+    return router_str_with_port;
+}
 
 
+router stringToRouter(char *s){
+    char **a,**b,*string;
+    router r;
 
+    strcpy(string, s);
 
+    a = str_split(string, '@');
+    r.id = atoi(a[0]);
+    
+    b = str_split(a[1], ':');
+    strcpy(r.ip, b[0]);
+    r.port = atoi(b[1]);
+
+    return r;
+}
 
 
 //======================================================
@@ -312,7 +333,26 @@ RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
 #pragma mark - MAIN
 //========================================
 
+char * composeHeader(linkr l,struct router routers[MAX_ROUTERS]){
+    char *line="";
 
+    char** tokens;
+
+    char *path_to_split;
+    strcpy(path_to_split, l.path);
+    tokens = str_split(path_to_split, '-');
+
+    for (int x = 0; l.nodes; x++) {
+        router r = routerOfIndex(atoi(tokens[x]), routers);
+        asprintf(&line,"%s%s",line,routerToString(r));
+    }
+
+    return line;
+    //    r.id = atoi(tokens[0]);
+//    r.port = atoi(tokens[1]);
+
+    
+}
 
 int main(int argc, const char * argv[]) {
 
@@ -347,7 +387,7 @@ int main(int argc, const char * argv[]) {
         prepareRoutingPaths(linkGraph);
 //
         
-        
+        composeHeader(linkGraph[2][6],routers);
         
         
         if (strcmp(argv[2], "v")==0) {

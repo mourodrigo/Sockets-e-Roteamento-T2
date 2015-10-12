@@ -123,6 +123,9 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
         printf("%d", destino);
         linkGraph[origem][destino].cost = dist[destino-1];
         strcpy(linkGraph[origem][destino].path, path);
+
+        linkGraph[origem][destino].nodes = cont;
+        
         printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
     }
 //    return linkGraph;

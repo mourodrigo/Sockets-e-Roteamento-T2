@@ -40,6 +40,7 @@ typedef struct linkr{
     int to;
     int cost;
     char path[MAX_PATH_STRING_SIZE];
+    int nodes;
 }linkr;
 
 typedef struct package{
