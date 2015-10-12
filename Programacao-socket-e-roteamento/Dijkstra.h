@@ -21,6 +21,6 @@ void prepareRoutingPaths(struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS]);
 void limpar(void);
 void cabecalho(void);
 void add(void);
-void procurar(void);
+//void procurar(void);
 int startDijkstra();
 #endif /* defined(____Dijkstra__) */

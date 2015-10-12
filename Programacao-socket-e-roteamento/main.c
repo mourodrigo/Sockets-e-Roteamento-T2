@@ -323,7 +323,7 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROU
                 printRouters(routers);
                 break;
             case 4:
-                procurar();
+//                procurar();
                 break;
         }
     }
