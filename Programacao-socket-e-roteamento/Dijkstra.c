@@ -20,7 +20,7 @@ int custo, *custos = NULL;
 
 void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS])
 {
-    int i,v, cont = 0;
+    int i,v = 0, cont = 0;
     int *ant, *tmp;
     int *z;     /* vertices para os quais se conhece o caminho minimo */
     double min;
@@ -156,7 +156,7 @@ void prepareRoutingPaths(struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS])
 void dijkstra(int vertices,int origem,int destino,int *custos)
 {
     
-    int i,v, cont = 0;
+    int i,v = 0, cont = 0;
     int *ant, *tmp;
     int *z;     /* vertices para os quais se conhece o caminho minimo */
     double min;
@@ -262,7 +262,7 @@ void cabecalho(void)
 
 void add_links(int linksCount, struct linkr links[MAX_LINKS],int routerCount)
 {
-    int i, j;
+    int i;
     
 //    do {
 //        printf("\nInforme o numero de vertices (no minimo 2 ): ");
@@ -310,7 +310,7 @@ void add_links(int linksCount, struct linkr links[MAX_LINKS],int routerCount)
 
 void add(void)
 {
-    int i, j;
+    int i;
     
     do {
         printf("\nInforme o numero de vertices (no minimo 2 ): ");
@@ -348,49 +348,7 @@ void add(void)
     } while (origem);
 }
 
-void procurar(void)
-{
-    int i, j;
-    
-    /* Azul */
-//    printf("{FONTE}33[36;1m");
-//    printf("Lista dos Menores Caminhos no Grafo Dado: \n");
-    
-//    for (i = 1; i <= vertices; i++) {
-//        for (j = 1; j <= vertices; j++)
-//            dijkstra(vertices, i,j, custos);
-//        printf("\n");
-//    }
-    
-//    printf("<Pressione ENTER para retornar ao menu principal>\n");
-//    /* Volta cor nornal */
-//    printf("{FONTE}33[m");
-}
 
 
 
-int startDijkstra() {
-    int i, j;
-    char opcao[3], l[50];
-    
-    do {
-        
-        cabecalho();
-        scanf("%s", &opcao);
-        
-        if ((strcmp(opcao, "d")) == 0) {
-            add();
-        }
-        FLSH;
-        
-        if ((strcmp(opcao, "r") == 0) && (vertices > 0) ) {
-            procurar();
-            FLSH;
-        }
-        
-    } while (opcao != "x"); 
-    
-    printf("\nAte a proxima...\n\n");
-    
-    return 0;
-}
+

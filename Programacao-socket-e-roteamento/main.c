@@ -395,7 +395,8 @@ int main(int argc, const char * argv[]) {
         self.idNumber = self.download.idNumber = self_router.id;
         
         //SINGLETON FOR DOWNLOAD/LISTENING DATA
-        pthread_t download_Singleton = prepareForDownload(self.download);
+        //pthread_t download_Singleton =
+        prepareForDownload(self.download);
         
         //ROUTING PATHS
         add_links(linkCount, links,routerCount);
