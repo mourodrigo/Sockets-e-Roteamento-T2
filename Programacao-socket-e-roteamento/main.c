@@ -334,7 +334,7 @@ RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
     RouterUp request;
     strcpy(request.destination_IP, destination.ip);
     request.idNumber = destination.id;
-    request.port = SEND_PORT;
+    request.port = destination.port;
     strcpy(request.message, message);
     return request;
 }

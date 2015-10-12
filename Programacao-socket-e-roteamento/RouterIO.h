@@ -30,7 +30,7 @@
 
 //#define SERVER "127.0.0.1"ç
 //#define BUFLEN 512  //Max length of buffer
-#define SEND_PORT 8888   //The port on which to send data
+//#define SEND_PORT 8888   //The port on which to send data
 //#define PORT_RECEIVE 8888   //The port on which to listen for incoming data
 
 #pragma mark - MESSAGE SENDING

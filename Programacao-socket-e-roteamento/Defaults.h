@@ -15,13 +15,8 @@
 #include <pthread.h>
 
 
-#if defined(MAC_OS_X_VERSION_MIN_REQUIRED)
 #define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
 #define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
-#else
-#define PATH_ROUTER_FILE "/home/osboxes/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/home/osboxes/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
-#endif
 
 #define MAX_ROUTERS 50
 #define MAX_LINKS 50
