@@ -93,6 +93,9 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
     else {
         i = destino;
         i = ant[i-1];
+        
+        char *path="";
+        
         while (i != -1) {
             //   printf("<-%d",i+1);
             tmp[cont] = i+1;
@@ -101,11 +104,25 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
         }
         
         for (i = cont; i > 0 ; i--) {
+            char *tmppath;
+            if (i==cont) {
+                asprintf(&tmppath,"%s%d",path,tmp[i-1]);
+            }else{
+                asprintf(&tmppath,"%s->%d",path,tmp[i-1]);
+            }
             printf("%d->", tmp[i-1]);
+            asprintf(&path,"%s%s",tmppath,"");
         }
+        
+        char *tmppath;
+        asprintf(&tmppath,"%s->%d",path,destino);
+        printf("%d->", tmp[i-1]);
+        asprintf(&path,"%s%s",tmppath,"");
+
+        
         printf("%d", destino);
         linkGraph[origem][destino].cost = dist[destino-1];
-        
+        strcpy(linkGraph[origem][destino].path, path);
         printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
     }
 //    return linkGraph;
