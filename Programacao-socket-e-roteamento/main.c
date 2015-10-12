@@ -257,16 +257,16 @@ void chat(struct router destination,SelfRouter self_router){
         
         printf("\nmsg: ");
         scanf("%s",message);
+        
         strcpy(request.message, message);
         sendMessage(request);
-        //        //            sleep(1);
     }
     
 //    upRequest(destination, <#char *message#>)
 };
 
 
-void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS],SelfRouter self_router){
+void interface(struct router routers[MAX_ROUTERS]/*,struct linkr links[MAX_LINKS]*/,SelfRouter self_router){
 
     printf("\n\n=========================\n\n");
     printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
@@ -281,12 +281,14 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr links[MAX_LINKS],
                 chat(r,self_router);
                 break;
             case 2:
-                printLinks(links);
+//                printLinks(links);
                 break;
             case 3:
                 printRouters(routers);
                 break;
-                
+            case 4:
+                procurar();
+                break;
         }
     }
 }
@@ -318,6 +320,7 @@ int main(int argc, const char * argv[]) {
     }else{
 //        printf("STARTING ROUTER ID: %s \n",argv[1]);
         
+        
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
         struct linkr links[MAX_LINKS];
@@ -335,10 +338,16 @@ int main(int argc, const char * argv[]) {
         //SINGLETON FOR DOWNLOAD/LISTENING DATA
         pthread_t download_Singleton = prepareForDownload(self.download);
 
+        //ROUTING PATHS
+        add_links(linkCount, links,routerCount);
 
+        
+        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
+        prepareRoutingPaths(linkGraph);
+//
         if (strcmp(argv[2], "v")==0) {
             sleep(1); //preparation for singleton init
-            interface(routers, links,self);
+            interface(routers/*, links*/,self);
         }else{
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
         }

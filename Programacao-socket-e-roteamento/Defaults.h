@@ -17,8 +17,8 @@
 #define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
 #define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
-#define MAX_ROUTERS 256
-#define MAX_LINKS 256
+#define MAX_ROUTERS 50
+#define MAX_LINKS 50
 
 #define DEBUG_LEVEL_1
 #define DEBUG_LEVEL_2
@@ -27,6 +27,7 @@
 
 #define MAX_PACKAGE_SIZE 999999
 #define MAX_USER_MSG_SIZE 1000
+#define MAX_PATH_STRING_SIZE 1000
 
 typedef struct router{
     int id;
@@ -38,6 +39,7 @@ typedef struct linkr{
     int from;
     int to;
     int cost;
+    char path[MAX_PATH_STRING_SIZE];
 }linkr;
 
 typedef struct package{
