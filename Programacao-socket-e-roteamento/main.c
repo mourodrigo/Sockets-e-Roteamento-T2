@@ -152,24 +152,25 @@ pthread_t prepareForDownload(RouterDown down){
 }
 
 RouterDown initDownClient(RouterDown down){
+    _down = down;
     
-    down.slen = sizeof(down.si_other);
+    _down.slen = sizeof(_down.si_other);
     
     //create a UDP socket
-    if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    if ((_down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         muerte("socket");
     }
     
     // zero out the structure
-    memset((char *) &down.si_me, 0, sizeof(down.si_me));
+    memset((char *) &_down.si_me, 0, sizeof(_down.si_me));
     
-    down.si_me.sin_family = AF_INET;
-    down.si_me.sin_port = htons(down.port);
-    down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    _down.si_me.sin_family = AF_INET;
+    _down.si_me.sin_port = htons(_down.port);
+    _down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
     
     //bind socket to port
-    if( bind(down.s , (struct sockaddr*)&down.si_me, sizeof(down.si_me) ) == -1)
+    if( bind(_down.s , (struct sockaddr*)&_down.si_me, sizeof(_down.si_me) ) == -1)
     {
         muerte("bind");
     }
@@ -177,7 +178,7 @@ RouterDown initDownClient(RouterDown down){
     
     
     
-    return down;
+    return _down;
 }
 
 
@@ -282,26 +283,29 @@ void chat(struct router destination_router,struct linkr router_path,SelfRouter s
     sleep(1);
     while (1) {
         
-        printf("\nmsg: ");
+        printf("\n( :q to exit) Your message: ");
         scanf("%s",message);
-        
+        if (strcmp(":q", message)==0) {
+            break;
+        }
         asprintf(&content,"%s%s",header,message);
         
         strcpy(request.message, content);
         sendMessage(request);
+        
     }
     
 //    upRequest(destination, <#char *message#>)
-};
+}
 
 
 void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS],SelfRouter self_router){
 
-    printf("\n\n=========================\n\n");
-    printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
-    printf("OPÇÃO: ");
     int option=-1;
     while (option!=0) {
+        printf("\n\n=========================\n\n");
+        printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
+        printf("OPÇÃO: ");
         scanf("%d",&option);
         linkr l;
         router r;
@@ -360,6 +364,9 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
             asprintf(&line,"%s%s|",line,routerToString(r));
         }
     }
+    free(line);
+    free(tokens);
+    free(path_to_split);
 
     return line;
     //    r.id = atoi(tokens[0]);
@@ -392,14 +399,13 @@ int main(int argc, const char * argv[]) {
         
         //SINGLETON FOR DOWNLOAD/LISTENING DATA
         pthread_t download_Singleton = prepareForDownload(self.download);
-
+        
         //ROUTING PATHS
         add_links(linkCount, links,routerCount);
 
         
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
-//
         
 //        getHeader(linkGraph[2][6],routers);
         
