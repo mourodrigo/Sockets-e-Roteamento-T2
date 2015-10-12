@@ -150,7 +150,7 @@ int readLinks(char filepath[],struct linkr links[MAX_LINKS]){
     while(fgets(line, 240, fr) != NULL)
     {
 #ifdef DEBUG_LEVEL_3
-        printf("Read link %s",line);
+//        printf("Read link %s",line);
 #endif
         char** tokens;
         linkr l;

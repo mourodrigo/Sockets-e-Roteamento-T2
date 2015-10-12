@@ -80,15 +80,15 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
     } while (v != destino - 1 && min != HUGE_VAL);
     
     /* Mostra o Resultado da busca */
-    printf("\tDe %d para %d: \t", origem, destino);
+//    printf("\tDe %d para %d: \t", origem, destino);
     linkGraph[origem][destino].from = origem;
     linkGraph[origem][destino].to = destino;
     
     if (min == HUGE_VAL) {
         linkGraph[origem][destino].cost = 0;
 
-        printf("Nao Existe\n");
-        printf("\tCusto: \t- \n");
+//        printf("Nao Existe\n");
+//        printf("\tCusto: \t- \n");
     }
     else {
         i = destino;
@@ -110,13 +110,13 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
             }else{
                 asprintf(&tmppath,"%s-%d",path,tmp[i-1]);
             }
-            printf("%d->", tmp[i-1]);
+//            printf("%d->", tmp[i-1]);
             asprintf(&path,"%s%s",tmppath,"");
         }
         
         char *tmppath;
         asprintf(&tmppath,"%s-%d",path,destino);
-        printf("%d-", tmp[i-1]);
+//        printf("%d-", tmp[i-1]);
         asprintf(&path,"%s%s",tmppath,"");
 
         
@@ -126,7 +126,7 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
 
         linkGraph[origem][destino].nodes = cont;
         
-        printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
+//        printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
     }
 //    return linkGraph;
 }
@@ -277,7 +277,7 @@ void add_links(int linksCount, struct linkr links[MAX_LINKS],int routerCount)
     for (i = 0; i <= vertices * vertices; i++)
         custos[i] = -1;
     
-    printf("vertices %d - Entre com as Arestas:\n",vertices);
+//    printf("vertices %d - Entre com as Arestas:\n",vertices);
     linksCount--;
     do {
 //        printf("\n\nlinkscount %d\n links[linksCount].from %d links[linksCount].to %d links[linksCount].cost %d\n\n", linksCount,links[linksCount].from,links[linksCount].to,links[linksCount].cost);
@@ -353,18 +353,18 @@ void procurar(void)
     int i, j;
     
     /* Azul */
-    printf("{FONTE}33[36;1m");
-    printf("Lista dos Menores Caminhos no Grafo Dado: \n");
+//    printf("{FONTE}33[36;1m");
+//    printf("Lista dos Menores Caminhos no Grafo Dado: \n");
     
-    for (i = 1; i <= vertices; i++) {
-        for (j = 1; j <= vertices; j++)
-            dijkstra(vertices, i,j, custos);
-        printf("\n");
-    }
+//    for (i = 1; i <= vertices; i++) {
+//        for (j = 1; j <= vertices; j++)
+//            dijkstra(vertices, i,j, custos);
+//        printf("\n");
+//    }
     
-    printf("<Pressione ENTER para retornar ao menu principal>\n");
-    /* Volta cor nornal */
-    printf("{FONTE}33[m");
+//    printf("<Pressione ENTER para retornar ao menu principal>\n");
+//    /* Volta cor nornal */
+//    printf("{FONTE}33[m");
 }
 
 
