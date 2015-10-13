@@ -74,7 +74,7 @@ RouterUp initUpClient(RouterUp up){
     
     //    if (!up.slen) {
 #ifdef DEBUG_LEVEL_3
-    printf("Init RouterUP\n");
+//    printf("Init RouterUP\n");
 #endif
     up.slen = sizeof(up.si_other);
     
@@ -217,8 +217,8 @@ void startDownListen(){
         }
         
         //print details of the client/peer and the data received
-        printf("Received packet from %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
-        printf("Data: %s\n" , _down.buf);
+        printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
+        printf("\nConteúdo: %s\n" , _down.buf);
         
         //now reply the client with the same data
         if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
