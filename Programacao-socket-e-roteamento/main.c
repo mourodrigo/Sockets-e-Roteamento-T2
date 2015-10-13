@@ -10,17 +10,13 @@
 #include "main.h"
 
 
-
-
-
-
 //======================================================
 #pragma mark - ROUTING MANAGE
 //======================================================
 RouterDown _down;
 int routerCount,linkCount;
 
-void muerte(char *s)
+void die(char *s)
 {
     perror(s);
     exit(1);
@@ -71,16 +67,11 @@ router stringToRouter(char *s){
 //======================================================
 
 RouterUp initUpClient(RouterUp up){
-    
-    //    if (!up.slen) {
-#ifdef DEBUG_LEVEL_3
-//    printf("Init RouterUP\n");
-#endif
     up.slen = sizeof(up.si_other);
     
     if ( (up.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        muerte("socket");
+        die("socket");
     }
     
     memset((char *) &up.si_other, 0, sizeof(up.si_other));
@@ -94,14 +85,13 @@ RouterUp initUpClient(RouterUp up){
         exit(1);
     }
     
-    //    }
     return up;
 }
 void sendMessage(RouterUp up){
     
     if (sendto(up.s, up.message, strlen(up.message) , 0 , (struct sockaddr *) &up.si_other, up.slen)==-1)
     {
-        muerte("sendto()");
+        die("sendto()");
     }
     
     //receive a reply and print it
@@ -111,7 +101,7 @@ void sendMessage(RouterUp up){
     //try to receive some data, this is a blocking call
     if (recvfrom(up.s, up.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
     {
-        muerte("recvfrom()");
+        die("recvfrom()");
     }
     
 #ifdef DEBUG_LEVEL_3
@@ -139,9 +129,6 @@ void sendPackage(char *s){
     request= upRequest(r, s);
     request=initUpClient(request);
     sendMessage(request);
-
-//replace(s, a[1], "")
-
 }
 
 
@@ -174,7 +161,7 @@ RouterDown initDownClient(RouterDown down){
     //create a UDP socket
     if ((_down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        muerte("socket");
+        die("socket");
     }
     
     // zero out the structure
@@ -187,17 +174,13 @@ RouterDown initDownClient(RouterDown down){
     //bind socket to port
     if( bind(_down.s , (struct sockaddr*)&_down.si_me, sizeof(_down.si_me) ) == -1)
     {
-        muerte("bind");
+        die("bind");
     }
-    
-    
-    
-    
     return _down;
 }
 
 
-void startDownListen(){
+void startDownListen(){ //listener to download data on thread
     
     //keep listening for data
 #ifdef DEBUG_LEVEL_3
@@ -213,7 +196,7 @@ void startDownListen(){
         //try to receive some data, this is a blocking call
         if ((_down.recv_len = recvfrom(_down.s, _down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
         {
-            muerte("recvfrom()");
+            die("recvfrom()");
         }
         
         //print details of the client/peer and the data received
@@ -223,7 +206,7 @@ void startDownListen(){
         //now reply the client with the same data
         if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
         {
-            muerte("sendto()");
+            die("sendto()");
         }
         
     }
@@ -268,22 +251,16 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
         //try to receive some data, this is a blocking call
         if ((down.recv_len = recvfrom(down.s, down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &down.si_other, &down.slen)) == -1)
         {
-            muerte("recvfrom()");
+            die("recvfrom()");
         }
-        
-        //print details of the client/peer and the data received
-//        printf("Received packet from %s:%d\n", inet_ntoa(down.si_other.sin_addr), ntohs(down.si_other.sin_port));
-//        printf("Data: %s\n" , down.buf);
         
         //now reply the client with the same data
         if (sendto(down.s, down.buf, down.recv_len, 0, (struct sockaddr*) &down.si_other, down.slen) == -1)
         {
-            muerte("sendto()");
+            die("sendto()");
         }
         
         char *routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
-    
-        
         char** tokens;
         tokens = str_split(routedMessage, '|');
         
@@ -296,9 +273,6 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
             printf("\n\nEncaminhando pacote %s", forward);
             sendPackage(forward);
         }
-        
-        
-        
     }
 }
 
@@ -367,46 +341,21 @@ void chat(struct router destination_router,struct linkr router_path,SelfRouter s
         
         strcpy(request.message, content);
         sendPackage(request.message);
-//        sendMessage(request);
-        
     }
-    
-//    upRequest(destination, <#char *message#>)
 }
 
 
 void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS],SelfRouter self_router){
 
-    int option=-1;
-    while (option!=0) {
-        printf("\n\n=========================\n\n");
-        printf("\n1 - Iniciar chat \n2 - Exibir enlaces \n3 - Exibir roteadores \n4 - Exibir caminhos \n0 - Sair\n\n");
-        printf("OPÇÃO: ");
-        scanf("%d",&option);
         linkr l;
         router r;
-        
-        switch (option) {
-                case 1:
-                r = chooseDestination(self_router, routers, linkGraph);
-                l = linkGraph[self_router.idNumber][r.id];
-                if (linkGraph[self_router.idNumber][r.id].cost<1) {
-                    printf("Destino não pode ser alcançado");
-                }else{
-                    chat(r, l, self_router,routers);
-                }
-                break;
-            case 2:
-//                printLinks(links);
-                break;
-            case 3:
-                printRouters(routers);
-                break;
-            case 4:
-//                procurar();
-                break;
+        r = chooseDestination(self_router, routers, linkGraph);
+        l = linkGraph[self_router.idNumber][r.id];
+        if (linkGraph[self_router.idNumber][r.id].cost<1) {
+            printf("Destino não pode ser alcançado");
+        }else{
+            chat(r, l, self_router,routers);
         }
-    }
 }
 
 
@@ -420,22 +369,15 @@ RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
 }
 
 
-
-
-
-//========================================
-#pragma mark - MAIN
-//========================================
-
 char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
     char *line="";
-
+    
     char** tokens;
-
+    
     char *path_to_split[MAX_ROUTERS];
     strcpy(path_to_split, l.path);
     tokens = str_split(path_to_split, '-');
-
+    
     for (int x = 0; x<=l.nodes ; x++) {
         router r = routerOfIndex(atoi(tokens[x]), routers);
         if (!x) {
@@ -444,21 +386,24 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
             asprintf(&line,"%s%s|",line,routerToString(r));
         }
     }
-
-    return line;
-    //    r.id = atoi(tokens[0]);
-//    r.port = atoi(tokens[1]);
-
     
+    return line;
 }
+
+
+
+
+
+//========================================
+#pragma mark - MAIN
+//========================================
+
 
 int main(int argc, const char * argv[]) {
 
     if (argc<2) {
             printf("\n Usage: ./main <router id>\n");
     }else{
-//        printf("STARTING ROUTER ID: %s \n",argv[1]);
-        
         
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
@@ -482,9 +427,6 @@ int main(int argc, const char * argv[]) {
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
         
-//        getHeader(linkGraph[2][6],routers);
-        
-        
         if (argc>2) {
             //SINGLETON FOR DOWNLOAD/LISTENING DATA
             prepareForDownload(self.download);
@@ -498,55 +440,6 @@ int main(int argc, const char * argv[]) {
 
             routing(self, self.download, routers);
         }
-
-    
-    
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-//        self.upload=initUpClient(self.upload);
-
-        
-        //        startDownListen();
-    //    strcpy(up.destination_IP, destination_IP);
-        
-
-        
-        
-//        while (1) {
-//            
-//            printf("\nmsg: ");
-//            scanf("%s",self.upload.message);
-//            sendMessage(self.upload);
-////            sleep(1);
-//        }
-    
-        
-        
-//        closeDown(_down);
-//        
-        //    add_links(linkCount, links);
-        //    startDijkstra();
-        //
-
-        //    closeUp(r);
-        
-//        self.download = initDownClient(self.download);
-//        startDownListen(self.download);
-//        closeDown(self.download);
-        
     }
-    
-    
-
     return 0;
 }
