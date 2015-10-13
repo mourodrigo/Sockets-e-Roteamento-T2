@@ -136,9 +136,12 @@ void sendPackage(char *s){
     char **b = str_split(a[1], '|');
 
     router r = stringToRouter(b[0]);
-    request= upRequest(r, replace(s, a[1], ""));
+    request= upRequest(r, s);
     request=initUpClient(request);
     sendMessage(request);
+
+//replace(s, a[1], "")
+
 }
 
 
@@ -222,9 +225,10 @@ void startDownListen(){
         {
             muerte("sendto()");
         }
-                
+        
     }
 }
+
 
 void closeDown(RouterDown down){
     close(down.s);
@@ -237,8 +241,65 @@ void closeDown(RouterDown down){
 
 
 
+//========================================
+#pragma mark - PACKAGE ROUTING
+//========================================
 
 
+void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS]){
+    
+    //keep listening for data
+#ifdef DEBUG_LEVEL_3
+    printf("Router %d listening for data on port %d\n",down.idNumber,down.port);
+#endif
+    
+    char * selfstr = "";
+    asprintf(&selfstr,"%s%s|",routerToString(routerOfIndex(self.idNumber, routers)),"");
+
+    
+    printf("self str %s",selfstr);
+    while(1)
+    {
+        fflush(stdout);
+        //receive a reply and print it
+        //clear the buffer by filling null, it might have previously received data
+        memset(down.buf,'\0', MAX_USER_MSG_SIZE);
+        
+        //try to receive some data, this is a blocking call
+        if ((down.recv_len = recvfrom(down.s, down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &down.si_other, &down.slen)) == -1)
+        {
+            muerte("recvfrom()");
+        }
+        
+        //print details of the client/peer and the data received
+//        printf("Received packet from %s:%d\n", inet_ntoa(down.si_other.sin_addr), ntohs(down.si_other.sin_port));
+//        printf("Data: %s\n" , down.buf);
+        
+        //now reply the client with the same data
+        if (sendto(down.s, down.buf, down.recv_len, 0, (struct sockaddr*) &down.si_other, down.slen) == -1)
+        {
+            muerte("sendto()");
+        }
+        
+        char *routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
+    
+        
+        char** tokens;
+        tokens = str_split(routedMessage, '|');
+        
+        routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
+
+        if (!tokens[2]) {
+            printf("Mensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
+        }else{
+            printf("Encaminhando pacote %s", replace(routedMessage, "~|", " Conteúdo: "));
+            
+        }
+        
+        
+        
+    }
+}
 
 
 
@@ -394,7 +455,7 @@ int main(int argc, const char * argv[]) {
 
     if (argc<2) {
             printf("\n Usage: ./main <router id>\n");
-    }else if(strcmp(argv[2], "v")==0){
+    }else{
 //        printf("STARTING ROUTER ID: %s \n",argv[1]);
         
         
@@ -412,9 +473,6 @@ int main(int argc, const char * argv[]) {
         self.download.port = self_router.port;
         self.idNumber = self.download.idNumber = self_router.id;
         
-        //SINGLETON FOR DOWNLOAD/LISTENING DATA
-        //pthread_t download_Singleton =
-        prepareForDownload(self.download);
         
         //ROUTING PATHS
         add_links(linkCount, links,routerCount);
@@ -426,16 +484,22 @@ int main(int argc, const char * argv[]) {
 //        getHeader(linkGraph[2][6],routers);
         
         
-        if (strcmp(argv[2], "v")==0) {
+        if (argc>2) {
+            //SINGLETON FOR DOWNLOAD/LISTENING DATA
+            prepareForDownload(self.download);
+            
             sleep(1); //preparation for singleton init
             interface(routers, linkGraph, self);
             //interface(routers/*, links*/,self);
         }else{
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
+            self.download = initDownClient(self.download);
+
+            routing(self, self.download, routers);
         }
 
-        
-        
+    
+    
 
         
         

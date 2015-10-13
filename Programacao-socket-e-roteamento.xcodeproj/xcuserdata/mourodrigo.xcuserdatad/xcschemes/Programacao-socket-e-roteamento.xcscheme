@@ -66,7 +66,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "v"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
