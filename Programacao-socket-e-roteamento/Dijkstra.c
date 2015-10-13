@@ -120,7 +120,7 @@ void dijkstraPath(int vertices,int origem,int destino,int *custos,struct linkr l
         asprintf(&path,"%s%s",tmppath,"");
 
         
-        printf("%d", destino);
+//        printf("%d", destino);
         linkGraph[origem][destino].cost = dist[destino-1];
         strcpy(linkGraph[origem][destino].path, path);
 
@@ -135,20 +135,12 @@ void prepareRoutingPaths(struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS])
 {
     int i, j;
     
-    /* Azul */
-    printf("{FONTE}33[36;1m");
-    printf("Lista dos Menores Caminhos no Grafo Dado: \n");
-    
     for (i = 1; i <= vertices; i++) {
         for (j = 1; j <= vertices; j++)
             //            dijkstra(vertices, i,j, custos);
             dijkstraPath(vertices, i, j, custos, linkGraph);
         printf("\n");
     }
-    
-    printf("<Pressione ENTER para retornar ao menu principal>\n");
-    /* Volta cor nornal */
-    printf("{FONTE}33[m");
 }
 
 
@@ -234,7 +226,7 @@ void dijkstra(int vertices,int origem,int destino,int *custos)
         for (i = cont; i > 0 ; i--) {
             printf("%d -> ", tmp[i-1]);
         }
-        printf("%d", destino);
+//        printf("%d", destino);
         
         printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
     }

@@ -49,7 +49,8 @@ char * routerToString(router r){
 
 
 router stringToRouter(char *s){
-    char **a,**b,*string;
+    char **a,**b;
+    char string[MAX_USER_MSG_SIZE]="";
     router r;
 
     strcpy(string, s);
@@ -126,8 +127,19 @@ void closeUp(RouterUp up){
 #endif
 }
 
+void sendPackage(char *s){
+    RouterUp request;
+    char string[MAX_HEADER_SIZE];
+    
+    strcpy(string, s);
+    char **a = str_split(string, '~');
+    char **b = str_split(a[1], '|');
 
-
+    router r = stringToRouter(b[0]);
+    request= upRequest(r, replace(s, a[1], ""));
+    request=initUpClient(request);
+    sendMessage(request);
+}
 
 
 
@@ -210,6 +222,7 @@ void startDownListen(){
         {
             muerte("sendto()");
         }
+                
     }
 }
 
@@ -291,7 +304,8 @@ void chat(struct router destination_router,struct linkr router_path,SelfRouter s
         asprintf(&content,"%s%s",header,message);
         
         strcpy(request.message, content);
-        sendMessage(request);
+        sendPackage(request.message);
+//        sendMessage(request);
         
     }
     
@@ -314,7 +328,11 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROU
                 case 1:
                 r = chooseDestination(self_router, routers, linkGraph);
                 l = linkGraph[self_router.idNumber][r.id];
-                chat(r, l, self_router,routers);
+                if (linkGraph[self_router.idNumber][r.id].cost<1) {
+                    printf("Destino não pode ser alcançado");
+                }else{
+                    chat(r, l, self_router,routers);
+                }
                 break;
             case 2:
 //                printLinks(links);
@@ -376,7 +394,7 @@ int main(int argc, const char * argv[]) {
 
     if (argc<2) {
             printf("\n Usage: ./main <router id>\n");
-    }else{
+    }else if(strcmp(argv[2], "v")==0){
 //        printf("STARTING ROUTER ID: %s \n",argv[1]);
         
         
