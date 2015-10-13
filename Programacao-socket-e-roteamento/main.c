@@ -290,10 +290,11 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
         routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
 
         if (!tokens[2]) {
-            printf("Mensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
+            printf("\n\nMensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
         }else{
-            printf("Encaminhando pacote %s", replace(routedMessage, "~|", " Conteúdo: "));
-            
+            char * forward = replace(down.buf, selfstr, "");
+            printf("\n\nEncaminhando pacote %s", forward);
+            sendPackage(forward);
         }
         
         
