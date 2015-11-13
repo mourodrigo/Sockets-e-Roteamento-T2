@@ -105,7 +105,7 @@ void sendMessage(RouterUp up){
     }
     
 #ifdef DEBUG_LEVEL_3
-    printf("Confirmação de recebimento: %s",up.buf);
+    printf("\n\nConfirmação de recebimento: %s",up.buf);
 #endif
     
 }
@@ -240,7 +240,7 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
     asprintf(&selfstr,"%s%s|",routerToString(routerOfIndex(self.idNumber, routers)),"");
 
     
-    printf("self str %s",selfstr);
+    printf("IDENTIFICADOR: %s",selfstr);
     while(1)
     {
         fflush(stdout);
