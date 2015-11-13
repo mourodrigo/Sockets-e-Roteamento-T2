@@ -10,7 +10,6 @@
 		3022E36B1BBE18E000751AA2 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E36A1BBE18E000751AA2 /* main.c */; };
 		3069C66B1BC060F20028DBFC /* FileIO.c in Sources */ = {isa = PBXBuildFile; fileRef = 3069C6691BC060F20028DBFC /* FileIO.c */; };
 		3069C66E1BC191870028DBFC /* Dijkstra.c in Sources */ = {isa = PBXBuildFile; fileRef = 3069C66C1BC191870028DBFC /* Dijkstra.c */; };
-		30B571E01BC37A2200C376AA /* RouterIO.c in Sources */ = {isa = PBXBuildFile; fileRef = 30B571DE1BC37A2200C376AA /* RouterIO.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,7 +35,6 @@
 		3069C66C1BC191870028DBFC /* Dijkstra.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Dijkstra.c; sourceTree = "<group>"; };
 		3069C66D1BC191870028DBFC /* Dijkstra.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Dijkstra.h; sourceTree = "<group>"; };
 		30B571DD1BC3762000C376AA /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
-		30B571DE1BC37A2200C376AA /* RouterIO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = RouterIO.c; sourceTree = "<group>"; };
 		30B571DF1BC37A2200C376AA /* RouterIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RouterIO.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -77,7 +75,6 @@
 				3069C6691BC060F20028DBFC /* FileIO.c */,
 				3069C66A1BC060F20028DBFC /* FileIO.h */,
 				3022E3711BBE1A6000751AA2 /* Defaults.h */,
-				30B571DE1BC37A2200C376AA /* RouterIO.c */,
 				30B571DF1BC37A2200C376AA /* RouterIO.h */,
 				305A3FA11BC9AF1D00427579 /* enlaces.config */,
 				305A3FA21BC9AF1D00427579 /* roteador.config */,
@@ -143,7 +140,6 @@
 			files = (
 				3069C66E1BC191870028DBFC /* Dijkstra.c in Sources */,
 				3069C66B1BC060F20028DBFC /* FileIO.c in Sources */,
-				30B571E01BC37A2200C376AA /* RouterIO.c in Sources */,
 				3022E36B1BBE18E000751AA2 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
