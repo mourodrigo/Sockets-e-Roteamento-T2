@@ -37,7 +37,8 @@
 
 typedef struct RouterUp{
     struct sockaddr_in si_other;
-    int s, slen,port,idNumber;//=sizeof(si_other);
+    int s,port,idNumber;//=sizeof(si_other);
+    socklen_t slen;
     char buf[MAX_USER_MSG_SIZE];
     char message[MAX_USER_MSG_SIZE];
     char destination_IP[15];
@@ -52,13 +53,15 @@ void muerte(char *s);
 
 typedef struct RouterDown{
     struct sockaddr_in si_me, si_other;
-    int s, i, recv_len,slen,port,idNumber;// = sizeof(si_other) , ;
+    int s, i,port,idNumber;// = sizeof(si_other) , ;
+    ssize_t recv_len;
+    socklen_t slen;
     char buf[MAX_USER_MSG_SIZE];
     
 }RouterDown;
 
 RouterDown initDownClient(RouterDown down);
-void startDownListen();
+void * startDownListen();
 void routerDidReceiveMessage(char message[1025]);
 void closeDown(RouterDown down);
 pthread_t prepareForDownload(RouterDown down);

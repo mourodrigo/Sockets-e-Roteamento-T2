@@ -113,7 +113,7 @@ void sendMessage(RouterUp up){
         {
     #ifdef DEBUG_LEVEL_3
             //die("recvfrom()");
-            printf("Problema ao enviar mensagem para %s:%d",up.destination_IP, up.port);
+            printf("\nProblema ao enviar mensagem para %s:%d",up.destination_IP, up.port);
     #endif
         }else{
     #ifdef DEBUG_LEVEL_3
@@ -123,7 +123,7 @@ void sendMessage(RouterUp up){
         }
     }
     if (sendTries<1) {
-        printf("DEU PAU MESMO, nao tem como enviar para %s:%d",up.destination_IP, up.port);
+        printf("\nDEU PAU MESMO, nao tem como enviar para %s:%d",up.destination_IP, up.port);
     }else{
         printf("tudo certo ;) %s:%d",up.destination_IP, up.port);
     }
@@ -200,7 +200,7 @@ RouterDown initDownClient(RouterDown down){
 }
 
 
-void startDownListen(){ //listener to download data on thread
+void * startDownListen(void){ //listener to download data on thread
     
     //keep listening for data
 #ifdef DEBUG_LEVEL_3
@@ -405,8 +405,8 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
     char** tokens;
     
     char *path_to_split[MAX_ROUTERS];
-    strcpy(path_to_split, l.path);
-    tokens = str_split(path_to_split, '-');
+    strcpy((char*)path_to_split, l.path);
+    tokens = str_split((char*)path_to_split, '-');
     
     for (int x = 0; x<=l.nodes ; x++) {
         router r = routerOfIndex(atoi(tokens[x]), routers);
