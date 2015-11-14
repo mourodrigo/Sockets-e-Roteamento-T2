@@ -227,6 +227,7 @@
 		3022E36F1BBE18E000751AA2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

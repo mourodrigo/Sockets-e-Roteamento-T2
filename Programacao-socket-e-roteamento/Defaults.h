@@ -15,12 +15,16 @@
 #include <pthread.h>
 
 
-#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+
+#define ROUTER_FILE_NAME "roteador.config"
+#define LINKS_FILE_NAME "enlaces.config"
 
 #define MAX_ROUTERS 50
 #define MAX_LINKS 50
 
+#define SEND_TRIES 5
 #define DEBUG_LEVEL_1
 #define DEBUG_LEVEL_2
 #define DEBUG_LEVEL_3

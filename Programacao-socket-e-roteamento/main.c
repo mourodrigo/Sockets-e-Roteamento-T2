@@ -89,24 +89,44 @@ RouterUp initUpClient(RouterUp up){
 }
 void sendMessage(RouterUp up){
     
-    if (sendto(up.s, up.message, strlen(up.message) , 0 , (struct sockaddr *) &up.si_other, up.slen)==-1)
-    {
-        die("sendto()");
+    int sendTries = SEND_TRIES;
+    while (sendTries--) {
+        
+        struct timeval tv;
+        tv.tv_sec = 3;
+        tv.tv_usec = 0;
+        if (setsockopt(up.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+            perror("send Message Socket Error");
+        }
+        
+        if (sendto(up.s, up.message, strlen(up.message) , 0 , (struct sockaddr *) &up.si_other, up.slen)==-1)
+        {
+            die("error sendto()");
+        }
+        
+        //receive a reply and print it
+        //clear the buffer by filling null, it might have previously received data
+        memset(up.buf,'\0', MAX_USER_MSG_SIZE);
+        
+        //try to receive some data, this is a blocking call
+        if (recvfrom(up.s, up.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
+        {
+    #ifdef DEBUG_LEVEL_3
+            //die("recvfrom()");
+            printf("Problema ao enviar mensagem para %s:%d",up.destination_IP, up.port);
+    #endif
+        }else{
+    #ifdef DEBUG_LEVEL_3
+            printf("\n\nConfirmação de recebimento: %s",up.buf);
+            break;
+    #endif
+        }
     }
-    
-    //receive a reply and print it
-    //clear the buffer by filling null, it might have previously received data
-    memset(up.buf,'\0', MAX_USER_MSG_SIZE);
-    
-    //try to receive some data, this is a blocking call
-    if (recvfrom(up.s, up.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
-    {
-        die("recvfrom()");
+    if (sendTries<1) {
+        printf("DEU PAU MESMO, nao tem como enviar para %s:%d",up.destination_IP, up.port);
+    }else{
+        printf("tudo certo ;) %s:%d",up.destination_IP, up.port);
     }
-    
-#ifdef DEBUG_LEVEL_3
-    printf("\n\nConfirmação de recebimento: %s",up.buf);
-#endif
     
 }
 
@@ -193,21 +213,31 @@ void startDownListen(){ //listener to download data on thread
         //clear the buffer by filling null, it might have previously received data
         memset(_down.buf,'\0', MAX_USER_MSG_SIZE);
         
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 900000;
+        if (setsockopt(_down.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+            perror("Error");
+        }
+        
+        
         //try to receive some data, this is a blocking call
         if ((_down.recv_len = recvfrom(_down.s, _down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
         {
-            die("recvfrom()");
+//            printf("erro recvfrom()");
+        }else{
+            //print details of the client/peer and the data received
+            printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
+            printf("\nConteúdo: %s\n" , _down.buf);
+            
+            //now reply the client with the same data
+            if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
+            {
+                die("sendto()");
+            }
+            
         }
         
-        //print details of the client/peer and the data received
-        printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
-        printf("\nConteúdo: %s\n" , _down.buf);
-        
-        //now reply the client with the same data
-        if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
-        {
-            die("sendto()");
-        }
         
     }
 }
@@ -401,9 +431,12 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
 
 int main(int argc, const char * argv[]) {
 
-    if (argc<2) {
+    printf("%s", argv[0]);
+        
+    if (argc<2) { // É NECESSÁRIO AO MENOS O ID DO ROTEADOR PARA FUNCIONAMENTO
             printf("\n Usage: ./main <router id>\n");
     }else{
+    
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
         struct linkr links[MAX_LINKS];
@@ -426,19 +459,44 @@ int main(int argc, const char * argv[]) {
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
         
-        if (argc>2) {
+        if (strcmp(argv[2], "c")==0) {
             //SINGLETON FOR DOWNLOAD/LISTENING DATA
             prepareForDownload(self.download);
             
             sleep(1); //preparation for singleton init
             interface(routers, linkGraph, self);
             //interface(routers/*, links*/,self);
-        }else{
+        }else if((int)argv[2] == 'r'){
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
             self.download = initDownClient(self.download);
 
             routing(self, self.download, routers);
         }
+//        
+//        router self_router;
+//        self_router.id = 1;
+//        strcpy(self_router.ip, "127.0.0.1");
+//        self_router.port = 8888;
+//
+//        SelfRouter self;
+//        self.download.port = self_router.port;
+//        self.idNumber = self.download.idNumber = self_router.id;
+//        
+//        prepareForDownload(self.download);
+//
+//        
+//        SelfRouter selfi;
+//        selfi.download.port = self_router.port;
+//        selfi.idNumber = selfi.download.idNumber = self_router.id;
+//        
+//        prepareForDownload(selfi.download);
+
+        
+        
+        
+        
+        
+    
     }
     return 0;
 }
