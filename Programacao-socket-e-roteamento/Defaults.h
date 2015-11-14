@@ -15,29 +15,40 @@
 #include <pthread.h>
 
 
+//CONFIG FILE
 #define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
 #define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
 
+//MAX SIZE FOR ARRAYS
 #define MAX_ROUTERS 50
 #define MAX_LINKS 50
-
 #define SENDING_BUFFER_SIZE 50
-
-
-#define SEND_TRIES 5
-#define DEBUG_LEVEL_1
-#define DEBUG_LEVEL_2
-#define DEBUG_LEVEL_3
-#define DEBUG_LEVEL_4
 
 #define MAX_PACKAGE_SIZE 999999
 #define MAX_USER_MSG_SIZE 1000
 #define MAX_PATH_STRING_SIZE 1000
 #define MAX_HEADER_SIZE 256
 
+//ROUTING CONFIGS
+#define SEND_TRIES 5
+
+//DEBUG
+#define DEBUG_LEVEL_1
+#define DEBUG_LEVEL_2
+#define DEBUG_LEVEL_3
+#define DEBUG_LEVEL_4
+
+//SOCKET PORTS
+#define SENDING_RANGE_MAX_PORT 8899
+#define SENDING_RANGE_MIN_PORT 8800
+#define RECEIVING_RANGE_MAX_PORT 8799
+#define RECEIVING_RANGE_MIN_PORT 8700
+
+
+//STRUCTS
 typedef struct router{
     int id;
     int port;
@@ -51,10 +62,5 @@ typedef struct linkr{
     char path[MAX_PATH_STRING_SIZE];
     int nodes;
 }linkr;
-
-typedef struct package{
-    char msg[100];
-    char to[15];
-}package;
 
 #endif

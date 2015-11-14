@@ -36,23 +36,27 @@
 #pragma mark - MESSAGE SENDING
 
 typedef struct Package{
-    int ttl;
     int localId;
-    int type;
-    int destinationID;
-    char message[MAX_USER_MSG_SIZE];
+    int destinationId;
     char destinationIP[15];
+    int ttl;
+    int type;
+    int senderId;
+    char senderIP[15];
+    char message[MAX_USER_MSG_SIZE];
+    int status;
 }Package;
 
 
 typedef struct RouterUp{
     struct sockaddr_in si_other;
-    int s,port,idNumber;//=sizeof(si_other);
+    int s,port;//=sizeof(si_other);
     socklen_t slen;
-    char buf[MAX_USER_MSG_SIZE];
-    char message[MAX_USER_MSG_SIZE];
+    char buf[MAX_USER_MSG_SIZE]; //teletar?
+    char message[MAX_USER_MSG_SIZE]; //teletar
     char destination_IP[15];
     int requestId;
+    Package package;
 }RouterUp;
 
 RouterUp initUpClient(RouterUp up);

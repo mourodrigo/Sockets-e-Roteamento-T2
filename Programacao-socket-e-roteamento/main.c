@@ -15,7 +15,7 @@
 //======================================================
 RouterDown _down;
 int routerCount,linkCount, sendingBufferIndex, autoIncrementalLocalRequestId;
-RouterUp sendingBuffer[SENDING_BUFFER_SIZE];
+Package sendingBuffer[SENDING_BUFFER_SIZE];
 
 
 void die(char *s)
@@ -68,7 +68,10 @@ router stringToRouter(char *s){
 #pragma mark - UPLOAD
 //======================================================
 
-RouterUp initUpClient(RouterUp up){
+RouterUp initUpClient(RouterUp up){ //teletar
+
+    
+    
     up.slen = sizeof(up.si_other);
     
     if ( (up.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -88,6 +91,41 @@ RouterUp initUpClient(RouterUp up){
     }
     
     return up;
+}
+
+
+RouterUp newSendRequestForPackage(Package p){
+
+    RouterUp newRequest;
+    newRequest.port = SENDING_RANGE_MIN_PORT;
+    newRequest.requestId = 0;
+    strcpy(newRequest.destination_IP, p.destinationIP);
+    
+    while (!newRequest.requestId) {
+        newRequest.slen = sizeof(newRequest.si_other);
+        if ( (newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+        {
+            die("socket");
+        }
+        
+        memset((char *) &newRequest.si_other, 0, sizeof(newRequest.si_other));
+        newRequest.si_other.sin_family = AF_INET;
+        newRequest.si_other.sin_port = htons(newRequest.port);
+        
+        
+        if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
+        {
+            sprintf(stderr, "inet_aton() failed creating request with port id %d",newRequest.port);
+            newRequest.port++;
+        }else{
+            newRequest.requestId = autoIncrementalLocalRequestId++;
+        }
+        
+        
+
+    }
+    
+    return newRequest;
 }
 void sendMessage(RouterUp up){
     
@@ -153,8 +191,10 @@ void sendPackage(char *s){
     sendMessage(request);
 }
 
-void addSendRequestToBuffer(RouterUp sendRequest){
-    sendingBuffer[sendingBufferIndex] = sendRequest;
+
+
+void addSendPackageToBuffer(Package p){
+    sendingBuffer[sendingBufferIndex] = p;
     sendingBufferIndex++;
 }
 
@@ -398,7 +438,7 @@ void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROU
 RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
     RouterUp request;
     strcpy(request.destination_IP, destination.ip);
-    request.idNumber = destination.id;
+    request.requestId = destination.id;
     request.port = destination.port;
     strcpy(request.message, message);
     return request;
@@ -426,8 +466,43 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
     return line;
 }
 
+Package packageFromString(char *s){
+    
+    char separator = '@';
+    char** tokens;
+    tokens = str_split(s, separator);
+    
+    Package p;
+    
+    p.localId = atoi(tokens[0]);
+    p.destinationId = atoi(tokens[1]);
+    strcpy(p.destinationIP, tokens[2]);
+    p.ttl = atoi(tokens[3]);
+    p.type = atoi(tokens[4]);
+    p.senderId = atoi(tokens[5]);
+    strcpy(p.senderIP, tokens[6]);
+    strcpy(p.message, tokens[7]);
+    p.status = atoi(tokens[8]);
+    
+    return p;
+}
 
 
+char * stringFromPackage(Package p){
+    char *str;
+    char separator = '@';
+    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
+            p.localId,separator,
+            p.destinationId,separator,
+            p.destinationIP,separator,
+            p.ttl,separator,
+            p.type,separator,
+            p.senderId,separator,
+            p.senderIP,separator,
+            p.message);
+
+    return str;
+}
 
 
 //========================================
@@ -443,6 +518,8 @@ int main(int argc, const char * argv[]) {
             printf("\n Usage: ./main <router id>\n");
     }else{
     
+        autoIncrementalLocalRequestId=0;
+        
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
         struct linkr links[MAX_LINKS];
@@ -461,6 +538,22 @@ int main(int argc, const char * argv[]) {
         //ROUTING PATHS
         add_links(linkCount, links,routerCount);
 
+        
+        Package p;
+        p.localId = 111;
+        strcpy(p.senderIP, "127.0.0.123");
+        p.ttl = 255;
+        p.type = 3;
+        strcpy(p.destinationIP, "127.0.0.1");
+        p.senderId = 1;
+        strcpy(p.message, "MESSAGEEEEE");
+        p.destinationId = 123;
+        
+
+        char *str = stringFromPackage(p);
+        Package newpackage = packageFromString(str);
+
+        
         
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
