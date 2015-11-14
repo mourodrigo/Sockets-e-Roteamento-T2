@@ -24,6 +24,9 @@
 #define MAX_ROUTERS 50
 #define MAX_LINKS 50
 
+#define SENDING_BUFFER_SIZE 50
+
+
 #define SEND_TRIES 5
 #define DEBUG_LEVEL_1
 #define DEBUG_LEVEL_2

@@ -14,7 +14,9 @@
 #pragma mark - ROUTING MANAGE
 //======================================================
 RouterDown _down;
-int routerCount,linkCount;
+int routerCount,linkCount, sendingBufferIndex, autoIncrementalLocalRequestId;
+RouterUp sendingBuffer[SENDING_BUFFER_SIZE];
+
 
 void die(char *s)
 {
@@ -117,7 +119,7 @@ void sendMessage(RouterUp up){
     #endif
         }else{
     #ifdef DEBUG_LEVEL_3
-            printf("\n\nConfirmação de recebimento: %s",up.buf);
+            printf("\n\nConfirmação de recebimento: %s:%d",up.destination_IP, up.port);
             break;
     #endif
         }
@@ -151,6 +153,10 @@ void sendPackage(char *s){
     sendMessage(request);
 }
 
+void addSendRequestToBuffer(RouterUp sendRequest){
+    sendingBuffer[sendingBufferIndex] = sendRequest;
+    sendingBufferIndex++;
+}
 
 
 
