@@ -404,7 +404,6 @@ int main(int argc, const char * argv[]) {
     if (argc<2) {
             printf("\n Usage: ./main <router id>\n");
     }else{
-        
         //WEB AND ROUTING STRUCTURES
         struct router routers[MAX_ROUTERS];
         struct linkr links[MAX_LINKS];
