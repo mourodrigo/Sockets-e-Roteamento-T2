@@ -118,7 +118,8 @@ RouterUp newSendRequestForPackage(Package p){
             sprintf(stderr, "inet_aton() failed creating request with port id %d",newRequest.port);
             newRequest.port++;
         }else{
-            newRequest.requestId = autoIncrementalLocalRequestId++;
+            newRequest.package = p;
+            newRequest.requestId = p.localId;
         }
         
         
@@ -127,47 +128,56 @@ RouterUp newSendRequestForPackage(Package p){
     
     return newRequest;
 }
-void sendMessage(RouterUp up){
+int sendPackageWithRequest(RouterUp sendRequest){
     
     int sendTries = SEND_TRIES;
+    int status;
+    
     while (sendTries--) {
         
         struct timeval tv;
         tv.tv_sec = 3;
         tv.tv_usec = 0;
-        if (setsockopt(up.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+        if (setsockopt(sendRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
             perror("send Message Socket Error");
         }
         
-        if (sendto(up.s, up.message, strlen(up.message) , 0 , (struct sockaddr *) &up.si_other, up.slen)==-1)
+        status = 0;
+        if (sendto(sendRequest.s, sendRequest.message, strlen(sendRequest.message) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
-            die("error sendto()");
+            //die("error sendto()");
+            printf("\Erro ao enviar mensagem %d para %s:%d",sendRequest.requestId,sendRequest.destination_IP, sendRequest.port);
+            return status;
+        }else{
+            status++;
+            printf("\nMensagem id %d enviada para %s:%d",sendRequest.requestId,sendRequest.destination_IP, sendRequest.port);
         }
         
         //receive a reply and print it
         //clear the buffer by filling null, it might have previously received data
-        memset(up.buf,'\0', MAX_USER_MSG_SIZE);
+        memset(sendRequest.buf,'\0', MAX_USER_MSG_SIZE);
         
         //try to receive some data, this is a blocking call
-        if (recvfrom(up.s, up.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &up.si_other, &up.slen) == -1)
+        if (recvfrom(sendRequest.s, sendRequest.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &sendRequest.si_other, &sendRequest.slen) == -1)
         {
     #ifdef DEBUG_LEVEL_3
             //die("recvfrom()");
-            printf("\nProblema ao enviar mensagem para %s:%d",up.destination_IP, up.port);
+            printf("\nFALHA: Tentativa 3/%d de receber ACK %s:%d",sendTries,sendRequest.destination_IP, sendRequest.port);
+            
     #endif
         }else{
     #ifdef DEBUG_LEVEL_3
-            printf("\n\nConfirmação de recebimento: %s:%d",up.destination_IP, up.port);
+            printf("\n\nConfirmação de recebimento: %s:%d",sendRequest.destination_IP, sendRequest.port);
+            return ++status;
             break;
     #endif
         }
     }
     if (sendTries<1) {
-        printf("\nDEU PAU MESMO, nao tem como enviar para %s:%d",up.destination_IP, up.port);
-    }else{
-        printf("tudo certo ;) %s:%d",up.destination_IP, up.port);
+        printf("\nDEU PAU MESMO, nao tem como enviar para %s:%d",sendRequest.destination_IP, sendRequest.port);
+        return status;
     }
-    
+    return status;
 }
 
 void closeUp(RouterUp up){
@@ -188,7 +198,7 @@ void sendPackage(char *s){
     router r = stringToRouter(b[0]);
     request= upRequest(r, s);
     request=initUpClient(request);
-    sendMessage(request);
+//    sendMessage(request);
 }
 
 
@@ -354,6 +364,67 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
 
 
 
+Package packageFromString(char *s){
+    
+    char separator = '@';
+    char** tokens;
+    tokens = str_split(s, separator);
+    
+    Package p;
+    
+    p.localId = atoi(tokens[0]);
+    p.destinationId = atoi(tokens[1]);
+    strcpy(p.destinationIP, tokens[2]);
+    p.ttl = atoi(tokens[3]);
+    p.type = atoi(tokens[4]);
+    p.senderId = atoi(tokens[5]);
+    strcpy(p.senderIP, tokens[6]);
+    strcpy(p.message, tokens[7]);
+//    p.status = atoi(tokens[8]);
+    
+    return p;
+}
+
+
+char * stringFromPackage(Package p){
+    char *str;
+    char separator = '@';
+    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
+             p.localId,separator,
+             p.destinationId,separator,
+             p.destinationIP,separator,
+             p.ttl,separator,
+             p.type,separator,
+             p.senderId,separator,
+             p.senderIP,separator,
+             p.message);
+    
+    return str;
+}
+
+
+void * flushSendBuffer(){
+    for (int index = 0; ; index++) {
+        Package p = sendingBuffer[index];
+        if (p.status==PACKAGE_STATUS_READY) {
+            RouterUp sendRequest = newSendRequestForPackage(p);
+            sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
+            int status = sendPackageWithRequest(sendRequest);
+            switch (status) {
+                case REQUEST_STATUS_ERROR:
+                    
+                    break;
+                case REQUEST_STATUS_SEND_NO_ANSWER:
+                    
+                    break;
+                case REQUEST_STATUS_OK:
+                    sendingBuffer[index].status= PACKAGE_STATUS_SENT;
+                    break;
+            }
+        }
+    }
+    
+}
 
 
 //========================================
@@ -466,45 +537,6 @@ char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
     return line;
 }
 
-Package packageFromString(char *s){
-    
-    char separator = '@';
-    char** tokens;
-    tokens = str_split(s, separator);
-    
-    Package p;
-    
-    p.localId = atoi(tokens[0]);
-    p.destinationId = atoi(tokens[1]);
-    strcpy(p.destinationIP, tokens[2]);
-    p.ttl = atoi(tokens[3]);
-    p.type = atoi(tokens[4]);
-    p.senderId = atoi(tokens[5]);
-    strcpy(p.senderIP, tokens[6]);
-    strcpy(p.message, tokens[7]);
-    p.status = atoi(tokens[8]);
-    
-    return p;
-}
-
-
-char * stringFromPackage(Package p){
-    char *str;
-    char separator = '@';
-    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
-            p.localId,separator,
-            p.destinationId,separator,
-            p.destinationIP,separator,
-            p.ttl,separator,
-            p.type,separator,
-            p.senderId,separator,
-            p.senderIP,separator,
-            p.message);
-
-    return str;
-}
-
-
 //========================================
 #pragma mark - MAIN
 //========================================
@@ -550,9 +582,25 @@ int main(int argc, const char * argv[]) {
         p.destinationId = 123;
         
 
+        
         char *str = stringFromPackage(p);
+        
         Package newpackage = packageFromString(str);
+        
+        
+        char *str1 = "112@123@127.0.0.1@255@3@1@192.168.25.25@m4";
+        
+        addSendPackageToBuffer(packageFromString(str));
+        addSendPackageToBuffer(packageFromString("112@123@127.0.0.1@255@3@1@192.168.25.25@m4"));
+        addSendPackageToBuffer(packageFromString("113@123@127.0.0.1@255@3@1@192.168.25.25@m3"));
+        addSendPackageToBuffer(packageFromString("114@123@127.0.0.1@255@3@1@192.168.25.25@m2"));
+        addSendPackageToBuffer(packageFromString("115@123@127.0.0.1@255@3@1@192.168.25.25@M1"));
+        
+        pthread_t flushSendBufferSingleton;
+        
+        pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
 
+        
         
         
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];

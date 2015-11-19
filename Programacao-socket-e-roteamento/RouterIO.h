@@ -60,7 +60,7 @@ typedef struct RouterUp{
 }RouterUp;
 
 RouterUp initUpClient(RouterUp up);
-void sendMessage(RouterUp up);
+///void sendMessage(RouterUp up);//teletar
 void closeUp(RouterUp up); //teletar
 void muerte(char *s);
 
