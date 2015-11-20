@@ -16,8 +16,7 @@
 Package sendingBuffer[SENDING_BUFFER_SIZE];
 struct connections conn;
 
-RouterDown _down;
-int sendingBufferIndex, autoIncrementalLocalRequestId;
+int sendingBufferIndex, autoIncrementalLocalRequestId; //teletar
 
 
 void die(char *s)
@@ -26,8 +25,8 @@ void die(char *s)
     exit(1);
 }
 
-router routerOfIndex(int indx, router r[conn.routerCount]){
-    for (int x=0; x<conn.routerCount; x++) { //teletar
+router routerOfIndex(int indx, router r[conn.routerCount]){ //teletar?
+    for (int x=0; x<conn.routerCount; x++) {
         if (r[x].id==indx) {
             return r[x];
         }
@@ -70,7 +69,7 @@ router stringToRouter(char *s){
 #pragma mark - UPLOAD
 //======================================================
 
-RouterUp initUpClient(RouterUp up){ //teletar
+uploadSocket initUpClient(uploadSocket up){ //teletar
 
     
     
@@ -96,14 +95,12 @@ RouterUp initUpClient(RouterUp up){ //teletar
 }
 
 
-RouterUp newSendRequestForPackage(Package p, int portNumber){
+uploadSocket newSendRequestForPackage(Package p, int portNumber){
 
-    RouterUp newRequest;
+    uploadSocket newRequest;
     newRequest.port = portNumber;
     newRequest.requestId = 0;
     strcpy(newRequest.destination_IP, p.destinationIP);
-    
-  
     
     while (!newRequest.requestId) {
         newRequest.slen = sizeof(newRequest.si_other);
@@ -119,7 +116,7 @@ RouterUp newSendRequestForPackage(Package p, int portNumber){
         if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
         {
             die("socket");
-            sprintf(stderr, "inet_aton() failed creating request with port id %d",newRequest.port);
+            printf("inet_aton() failed creating request with port id %d",newRequest.port);
             newRequest.port++;
         }else{
             newRequest.package = p;
@@ -140,14 +137,14 @@ RouterUp newSendRequestForPackage(Package p, int portNumber){
     
     return newRequest;
 }
-int sendPackageWithRequest(RouterUp sendRequest){
+int sendPackageWithRequest(uploadSocket sendRequest){
     
     int sendTries = SEND_TRIES;
     if (sendRequest.package.type==PACKAGE_TYPE_BROADCAST) {
         sendTries=1;
     }
     
-    int status;
+    int status = 0;
     
     char *messageString = stringFromPackage(sendRequest.package);
     
@@ -188,24 +185,24 @@ int sendPackageWithRequest(RouterUp sendRequest){
     return status;
 }
 
-void closeUp(RouterUp up){
+void closeUp(uploadSocket up){
     close(up.s);
 #ifdef DEBUG_LEVEL_3
     printf("Up Client Closed\n");
 #endif
 }
 
-void sendPackage(char *s){
-    RouterUp request;
-    char string[MAX_HEADER_SIZE];
-    
-    strcpy(string, s);
-    char **a = str_split(string, '~');
-    char **b = str_split(a[1], '|');
-
-    router r = stringToRouter(b[0]);
-    request= upRequest(r, s);
-    request=initUpClient(request);
+void sendPackage(char *s){//teletar
+//    RouterUp request;
+//    char string[MAX_HEADER_SIZE];
+//    
+//    strcpy(string, s);
+//    char **a = str_split(string, '~');
+//    char **b = str_split(a[1], '|');
+//
+//    router r = stringToRouter(b[0]);
+//    request= upRequest(r, s);
+//    request=initUpClient(request);
 //    sendMessage(request);
 }
 
@@ -227,8 +224,8 @@ void addSendPackageToBuffer(Package p){
 #pragma mark - DOWNLOAD
 //======================================================
 
-pthread_t prepareForDownload(RouterDown down){
-    _down = initDownClient(down);
+pthread_t prepareForDownload(downloadSocket down){
+    conn.downloadSocket = initDownClient(down);
     pthread_t download_Singleton;
     
     pthread_create(&download_Singleton, NULL, startDownListen, (void*)&down);
@@ -237,30 +234,30 @@ pthread_t prepareForDownload(RouterDown down){
     return download_Singleton;
 }
 
-RouterDown initDownClient(RouterDown down){
-    _down = down;
+downloadSocket initDownClient(downloadSocket down){
+    down = down;
     
-    _down.slen = sizeof(_down.si_other);
+    down.slen = sizeof(down.si_other);
     
     //create a UDP socket
-    if ((_down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         die("socket");
     }
     
     // zero out the structure
-    memset((char *) &_down.si_me, 0, sizeof(_down.si_me));
+    memset((char *) &down.si_me, 0, sizeof(down.si_me));
     
-    _down.si_me.sin_family = AF_INET;
-    _down.si_me.sin_port = htons(_down.port);
-    _down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    down.si_me.sin_family = AF_INET;
+    down.si_me.sin_port = htons(down.port);
+    down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
     
     //bind socket to port
-    if( bind(_down.s , (struct sockaddr*)&_down.si_me, sizeof(_down.si_me) ) == -1)
+    if( bind(down.s , (struct sockaddr*)&down.si_me, sizeof(down.si_me) ) == -1)
     {
         die("bind");
     }
-    return _down;
+    return down;
 }
 
 
@@ -268,34 +265,34 @@ void * startDownListen(void){ //listener to download data on thread
     
     //keep listening for data
 #ifdef DEBUG_LEVEL_3
-    printf("Router %d listening for data on port %d\n",_down.idNumber,_down.port);
+    printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
 #endif
     while(1)
     {
         fflush(stdout);
         //receive a reply and print it
         //clear the buffer by filling null, it might have previously received data
-        memset(_down.buf,'\0', MAX_USER_MSG_SIZE);
+        memset(conn.downloadSocket.buf,'\0', MAX_USER_MSG_SIZE);
         
         struct timeval tv;
         tv.tv_sec = 0;
         tv.tv_usec = 900000;
-        if (setsockopt(_down.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+        if (setsockopt(conn.downloadSocket.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
             perror("Error");
         }
         
         
         //try to receive some data, this is a blocking call
-        if ((_down.recv_len = recvfrom(_down.s, _down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &_down.si_other, &_down.slen)) == -1)
+        if ((conn.downloadSocket.recv_len = recvfrom(conn.downloadSocket.s, conn.downloadSocket.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &conn.downloadSocket.si_other, &conn.downloadSocket.slen)) == -1)
         {
 //            printf("erro recvfrom()");
         }else{
             //print details of the client/peer and the data received
-            printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(_down.si_other.sin_addr), ntohs(_down.si_other.sin_port));
-            printf("\nConteúdo: %s\n" , _down.buf);
+            printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(conn.downloadSocket.si_other.sin_addr), ntohs(conn.downloadSocket.si_other.sin_port));
+            printf("\nConteúdo: %s\n" , conn.downloadSocket.buf);
             
             //now reply the client with the same data
-            if (sendto(_down.s, _down.buf, _down.recv_len, 0, (struct sockaddr*) &_down.si_other, _down.slen) == -1)
+            if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
                 die("sendto()");
             }
@@ -307,7 +304,7 @@ void * startDownListen(void){ //listener to download data on thread
 }
 
 
-void closeDown(RouterDown down){
+void closeDown(downloadSocket down){
     close(down.s);
     
 #ifdef DEBUG_LEVEL_3
@@ -323,15 +320,15 @@ void closeDown(RouterDown down){
 //========================================
 
 
-void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS]){
+void routing(connections conn){
     
     //keep listening for data
 #ifdef DEBUG_LEVEL_3
-    printf("Router %d listening for data on port %d\n",down.idNumber,down.port);
+    printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
 #endif
     
     char * selfstr = "";
-    asprintf(&selfstr,"%s%s|",routerToString(routerOfIndex(self.idNumber, routers)),"");
+    asprintf(&selfstr,"%s%s|",routerToString(conn.selfRouter),"");
 
     
     printf("IDENTIFICADOR: %s",selfstr);
@@ -340,33 +337,33 @@ void routing(SelfRouter self,RouterDown down,struct router routers[MAX_ROUTERS])
         fflush(stdout);
         //receive a reply and print it
         //clear the buffer by filling null, it might have previously received data
-        memset(down.buf,'\0', MAX_USER_MSG_SIZE);
+        memset(conn.downloadSocket.buf,'\0', MAX_USER_MSG_SIZE);
         
         //try to receive some data, this is a blocking call
-        if ((down.recv_len = recvfrom(down.s, down.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &down.si_other, &down.slen)) == -1)
+        if ((conn.downloadSocket.recv_len = recvfrom(conn.downloadSocket.s, conn.downloadSocket.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &conn.downloadSocket.si_other, &conn.downloadSocket.slen)) == -1)
         {
             die("recvfrom()");
         }
         
         //now reply the client with the same data
-        if (sendto(down.s, down.buf, down.recv_len, 0, (struct sockaddr*) &down.si_other, down.slen) == -1)
+        if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
         {
             die("sendto()");
         }
         
-        char *routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
-        char** tokens;
-        tokens = str_split(routedMessage, '|');
-        
-        routedMessage = replace(down.buf, routerToString(routerOfIndex(down.idNumber, routers)), "");
-
-        if (!tokens[2]) {
-            printf("\n\nMensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
-        }else{
-            char * forward = replace(down.buf, selfstr, "");
-            printf("\n\nEncaminhando pacote %s", forward);
-            sendPackage(forward);
-        }
+//        char *routedMessage = replace(conn.downloadSocket.buf, routerToString(routerOfIndex(conn.downloadSocket.idNumber, routers)), "");
+//        char** tokens;
+//        tokens = str_split(routedMessage, '|');
+//        
+//        routedMessage = replace(conn.downloadSocket.buf, routerToString(routerOfIndex(conn.downloadSocket.idNumber, routers)), "");
+//
+//        if (!tokens[2]) {
+//            printf("\n\nMensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
+//        }else{
+//            char * forward = replace(conn.downloadSocket.buf, selfstr, "");
+//            printf("\n\nEncaminhando pacote %s", forward);
+//            sendPackage(forward);
+//        }
     }
 }
 
@@ -459,7 +456,7 @@ void * sendLinksBroadcast(){
         strcpy(p.message, getLinkStringToBroadCast(conn));
         p.status=PACKAGE_STATUS_READY;
 
-        RouterUp sendRequest = newSendRequestForPackage(p, conn.routerList[x].port);
+        uploadSocket sendRequest = newSendRequestForPackage(p, conn.routerList[x].port);
         sendPackageWithRequest(sendRequest);
         sleep(1);
         if (x==conn.routerCount-1) {
@@ -482,7 +479,7 @@ void * flushSendBuffer(){
             Package p = sendingBuffer[index];
             if (p.status==PACKAGE_STATUS_READY) {
                 sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
-                    RouterUp sendRequest = newSendRequestForPackage(p,8888);
+                    uploadSocket sendRequest = newSendRequestForPackage(p,8888);
                     int status = sendPackageWithRequest(sendRequest);
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
@@ -511,23 +508,23 @@ void printRouter(router r){
     printf("ID: %d | Porta: %d | IP: %s\n",r.id,r.port,r.ip);
 }
 
-void printRouters(router r[conn.routerCount]){
+void printRouters(connections conn){
     for (int x=0; x<conn.routerCount; x++) { //teletar
-        printRouter(r[x]);
+        printRouter(conn.routerList[x]);
     }
 }
 
 void printlink(linkr l){
     printf("FROM: %d | TO: %d | COST: %d\n",l.from,l.to,l.cost);
 }
-void printLinks(linkr l[conn.linksCount]){
+void printLinks(connections conn){
     for (int x=0; x<conn.linksCount; x++) {
-        printlink(l[x]);
+        printlink(conn.linksList[x]);
     }
 }
 
-router chooseDestination(SelfRouter self_router, struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS]){
-    printRouters(routers);
+router chooseDestination(connections conn){
+    printRouters(conn);
     router r;
     r.id=-1;
     while (r.id<0) {
@@ -535,28 +532,43 @@ router chooseDestination(SelfRouter self_router, struct router routers[MAX_ROUTE
         printf("\nEscolha o id do destinatário: ");
         int indx;
         scanf("%d",&indx);
-        r=routerOfIndex(indx, routers);
+        if (indx>0 && indx<conn.routerCount) {
+            r=conn.routerList[indx];
+        }
     }
     return r;
 }
 
-void chat(struct router destination_router,struct linkr router_path,SelfRouter self_router,struct router routers[MAX_ROUTERS]){
+void chat(struct router destinationRouter, connections conn){
 
-    RouterUp request;
+    uploadSocket request;
     char message[MAX_USER_MSG_SIZE];
-    request= upRequest(destination_router, message);
-    request=initUpClient(request);
-    char header[MAX_HEADER_SIZE];
-    char *content;
     
-    strcpy(header, getHeader(router_path, routers));
-
     sleep(1);
     while (1) {
+    
+        Package p;
+        p.localId = conn.selfID;
+        p.destinationId = destinationRouter.id;
+        strcpy(p.destinationIP, destinationRouter.ip);
+        p.ttl=255;
+        p.type=PACKAGE_TYPE_MESSAGE;
+        p.senderId=conn.selfRouter.id;
+        strcpy(p.senderIP, destinationRouter.ip);
+        p.status=PACKAGE_STATUS_READY;
+        strcpy(p.message, getLinkStringToBroadCast(conn));
         
-        printf("\n( :q to exit) Your message: ");
+    
+        request= upRequest(destinationRouter, message);
+        request=initUpClient(request);
+        char header[MAX_HEADER_SIZE];
+        char *content;
+        
+//        strcpy(header, getHeader(router_path, routers)); //header
+        
+        printf("\n( :menu to exit) Your message: ");
         scanf("%s",message);
-        if (strcmp(":q", message)==0) {
+        if (strcmp(":menu", message)==0) {
             break;
         }
         asprintf(&content,"%s%s",header,message);
@@ -567,37 +579,48 @@ void chat(struct router destination_router,struct linkr router_path,SelfRouter s
 }
 
 
-void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS],SelfRouter self_router){
+void interface(connections conn){
     while (1) {
-        int option = 1;
-        char * package[MAX_USER_MSG_SIZE];
-        printf("\nPacote a enviar: ");
-        scanf("%s",package);
+        char *option = ":menu";
 
-//        printf("1- Enviar pacote");
-//        scanf("%d",&option);
-        Package new = packageFromString((char*)package);
-        new.status=PACKAGE_STATUS_READY;
-        addSendPackageToBuffer(new);
+        if (sizeof(option)) {
+            if (strcmp(option, "1")==0) {
+                
+            }
+            if (strcmp(option, "2")==0) {
+                printRouters(conn);
+                router r;
+                while (r.id) {
+                    r = chooseDestination(conn);
+                }
+            }
+            if (strcmp(option, "3")==0) {
+                char * package[MAX_PACKAGE_SIZE];
+                printf("\n Insira o pacote a enviar:");
+                scanf("%s",*package);
+                Package new = packageFromString((char*)package);
+                new.status=PACKAGE_STATUS_READY;
+                addSendPackageToBuffer(new);
+            }
+            if (strcmp(option, ":menu")==0) {
+                printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
+                printf("[ 1 ] Ver tabela de roteamento\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n Selecione um item: ");
+                option="";
+                gets(option);
+            }
+        }
+        //        scanf("%s",package);
+
         
         
         
     }
     
-        linkr l;
-        router r;
-        r = chooseDestination(self_router, routers, linkGraph);
-        l = linkGraph[self_router.idNumber][r.id];
-        if (linkGraph[self_router.idNumber][r.id].cost<1) {
-            printf("Destino não pode ser alcançado");
-        }else{
-            chat(r, l, self_router,routers);
-        }
 }
 
 
-RouterUp upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
-    RouterUp request;
+uploadSocket upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
+    uploadSocket request;
     strcpy(request.destination_IP, destination.ip);
     request.requestId = destination.id;
     request.port = destination.port;
@@ -648,82 +671,36 @@ int main(int argc, const char * argv[]) {
         conn = readLinks(PATH_LINKS_FILE, conn);
         conn = readRouters(PATH_ROUTER_FILE, conn);
         
-        
-        //GATEWAY CONFIG INITIALIZATION
-        router self_router = routerOfIndex(conn.selfID, conn.routerList);
-        SelfRouter self;
-        self.download.port = self_router.port;
-        self.idNumber = self.download.idNumber = self_router.id;
-        
-        
         pthread_t flushSendBufferSingleton;
-        
         pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
       
         pthread_t sendLinksBroadcastSingleton;
-        
         pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
         
-        //ROUTING PATHS
-        add_links(conn.linksCount, conn.linksList,conn.routerCount);
+        prepareForDownload(conn.downloadSocket);
+        interface(conn);
         
-        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
-        prepareRoutingPaths(linkGraph);
-        
-//        ROUTING SINGLETONS
-        if (strcmp(argv[2], "c")==0) {
-            //SINGLETON FOR DOWNLOAD/LISTENING DATA
-            prepareForDownload(self.download);
-            
-            sleep(1); //preparation for singleton init
-            interface(conn.routerList, linkGraph, self);
-            //interface(routers/*, links*/,self);
-        }else if(strcmp(argv[2], "r")==0){
-            printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
-            self.download = initDownClient(self.download);
+        //GATEWAY CONFIG INITIALIZATION
+//        router self_router = routerOfIndex(conn.selfID, conn.routerList);
 
-            routing(self, self.download, conn.routerList);
-        }
+        
+        //ROUTING SINGLETONS
+//        if (strcmp(argv[2], "c")==0) {
+//            
+//            //SINGLETON FOR DOWNLOAD/LISTENING DATA
+//            prepareForDownload();
+//            
+//            sleep(1); //preparation for singleton init
+//            interface(conn);
+//            //interface(routers/*, links*/,self);
+//        }else if(strcmp(argv[2], "r")==0){
+//            printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
+//            self.download = initDownClient(self.download);
+//
+//            routing(self, self.download, conn.routerList);
+//        }
         
         
-        
-        //        char *str1 = "112@123@127.0.0.1@255@3@1@192.168.25.25@m4";
-        //
-        //        addSendPackageToBuffer(packageFromString(str));
-        //        addSendPackageToBuffer(packageFromString("112@123@127.0.0.1@255@3@1@192.168.25.25@m4"));
-        //        addSendPackageToBuffer(packageFromString("113@123@127.0.0.1@255@3@1@192.168.25.25@m3"));
-        //        addSendPackageToBuffer(packageFromString("114@123@127.0.0.1@255@3@1@192.168.25.25@m2"));
-        //        addSendPackageToBuffer(packageFromString("115@123@127.0.0.1@255@3@1@192.168.25.25@M1"));
-        //
-        
-        
-        
-        
-        
-        Package p;
-        p.localId = 2;
-        strcpy(p.senderIP, "127.0.0.123");
-        p.ttl = 255;
-        p.type = PACKAGE_TYPE_BROADCAST;
-        strcpy(p.destinationIP, "127.0.0.1");
-        p.senderId = 2;
-        strcpy(p.message, "MESSAGEEEEE");
-        p.destinationId = 2;
-        p.status = PACKAGE_STATUS_READY;
-        //        Package pp = {111,222,"192.168.255.255",255,255,255,"127.1.0.1","Message!!",123};
-        //
-        //
-        char *str = stringFromPackage(p);
-        //
-        Package newpackage = packageFromString(str);
-        
-        //2@2@127.0.0.1@255@255@2@127.0.0.123@MESSAGEEEEE
-        
-        addSendPackageToBuffer(p);
-        addSendPackageToBuffer(p);
-        addSendPackageToBuffer(p);
-        addSendPackageToBuffer(p);
-        addSendPackageToBuffer(p);
         
         //
 //        router self_router;

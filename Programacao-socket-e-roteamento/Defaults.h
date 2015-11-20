@@ -54,6 +54,8 @@
 #define PACKAGE_STATUS_SENT 3
 
 #define PACKAGE_TYPE_BROADCAST 255
+#define PACKAGE_TYPE_MESSAGE 111
+
 #define PACKAGE_STATUS_READY 1
 #define PACKAGE_STATUS_SENDING 2
 #define PACKAGE_STATUS_SENT 3
@@ -66,28 +68,5 @@
 #define REQUEST_STATUS_OK 2
 
 #define REQUEST_TIMEOUT_NSEC 100
-
-
-//STRUCTS
-typedef struct router{
-    int id;
-    int port;
-    char ip[15];
-}router;
-
-typedef struct linkr{
-    int from;
-    int to;
-    int cost;
-    char path[MAX_PATH_STRING_SIZE];
-    int nodes;
-}linkr;
-
-typedef struct connections{
-    int selfID;
-    struct router routerList[MAX_ROUTERS];
-    struct linkr linksList[MAX_LINKS];
-    int routerCount, linksCount;
-}connections;
 
 #endif

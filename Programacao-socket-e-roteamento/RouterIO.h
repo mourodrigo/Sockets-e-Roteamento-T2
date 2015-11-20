@@ -28,11 +28,6 @@
 
 #pragma mark - BASIC CONFIG
 
-//#define SERVER "127.0.0.1"ç
-//#define BUFLEN 512  //Max length of buffer
-//#define SEND_PORT 8888   //The port on which to send data
-//#define PORT_RECEIVE 8888   //The port on which to listen for incoming data
-
 #pragma mark - MESSAGE SENDING
 
 typedef struct Package{
@@ -48,7 +43,7 @@ typedef struct Package{
 }Package;
 
 
-typedef struct RouterUp{
+typedef struct uploadSocket{
     struct sockaddr_in si_other;
     int s,port;//=sizeof(si_other);
     socklen_t slen;
@@ -58,37 +53,45 @@ typedef struct RouterUp{
     int requestId;
     Package package;
     int timeoutnsec;
-}RouterUp;
+}uploadSocket;
 
-RouterUp initUpClient(RouterUp up);
-///void sendMessage(RouterUp up);//teletar
-void closeUp(RouterUp up); //teletar
-void muerte(char *s);
-
-#pragma mark - MESSAGE RECEIVING
-
-typedef struct RouterDown{
+typedef struct downloadSocket{
     struct sockaddr_in si_me, si_other;
     int s, i,port,idNumber;// = sizeof(si_other) , ;
     ssize_t recv_len;
     socklen_t slen;
     char buf[MAX_USER_MSG_SIZE];
     
-}RouterDown;
+}downloadSocket;
 
-RouterDown initDownClient(RouterDown down);
+typedef struct router{
+    int id;
+    int port;
+    char ip[15];
+}router;
+
+typedef struct linkr{
+    int from;
+    int to;
+    int cost;
+    char path[MAX_PATH_STRING_SIZE];
+    int nodes;
+}linkr;
+
+typedef struct connections{
+    int selfID;
+    struct router selfRouter;
+    struct router routerList[MAX_ROUTERS];
+    struct linkr linksList[MAX_LINKS];
+    int routerCount, linksCount;
+    struct uploadSocket uploadSocket;
+    struct downloadSocket downloadSocket;
+}connections;
+
+
 void * startDownListen();
 void routerDidReceiveMessage(char message[1025]);
-void closeDown(RouterDown down);
-pthread_t prepareForDownload(RouterDown down);
 #pragma mark - ROUTER ASSEMBLY
-
-typedef struct SelfRouter{
-    int idNumber;
-    RouterUp upload;
-    RouterDown download;
-}SelfRouter;
-
 
 
 #endif /* defined(____RouterIO__) */

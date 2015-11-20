@@ -13,6 +13,7 @@
 #include <string.h>
 #include <assert.h>
 #include "Defaults.h"
+#include "RouterIO.h"
 
 connections readRouters(char filepath[], connections conn);
 connections readLinks(char filepath[],connections conn);

@@ -134,6 +134,9 @@ connections readRouters(char filepath[], connections conn){
                 conn.routerList[indx]=r;
                 indx++;
             }
+            if (r.id==conn.selfID) {
+                conn.selfRouter=r;
+            }
             aux--;
         }
     }
