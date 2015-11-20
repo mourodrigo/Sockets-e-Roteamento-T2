@@ -13,9 +13,11 @@
 //======================================================
 #pragma mark - ROUTING MANAGE
 //======================================================
-RouterDown _down;
-int routerCount,linkCount, sendingBufferIndex, autoIncrementalLocalRequestId;
 Package sendingBuffer[SENDING_BUFFER_SIZE];
+struct connections conn;
+
+RouterDown _down;
+int sendingBufferIndex, autoIncrementalLocalRequestId;
 
 
 void die(char *s)
@@ -24,8 +26,8 @@ void die(char *s)
     exit(1);
 }
 
-router routerOfIndex(int indx, router r[routerCount]){
-    for (int x=0; x<routerCount; x++) { //teletar
+router routerOfIndex(int indx, router r[conn.routerCount]){
+    for (int x=0; x<conn.routerCount; x++) { //teletar
         if (r[x].id==indx) {
             return r[x];
         }
@@ -94,17 +96,19 @@ RouterUp initUpClient(RouterUp up){ //teletar
 }
 
 
-RouterUp newSendRequestForPackage(Package p){
+RouterUp newSendRequestForPackage(Package p, int portNumber){
 
     RouterUp newRequest;
-    newRequest.port = SENDING_RANGE_MIN_PORT;
+    newRequest.port = portNumber;
     newRequest.requestId = 0;
     strcpy(newRequest.destination_IP, p.destinationIP);
     
+  
+    
     while (!newRequest.requestId) {
         newRequest.slen = sizeof(newRequest.si_other);
-        if ( (newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-        {
+        newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (newRequest.s == -1){
             die("socket");
         }
         
@@ -112,14 +116,22 @@ RouterUp newSendRequestForPackage(Package p){
         newRequest.si_other.sin_family = AF_INET;
         newRequest.si_other.sin_port = htons(newRequest.port);
         
-        
         if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
         {
+            die("socket");
             sprintf(stderr, "inet_aton() failed creating request with port id %d",newRequest.port);
             newRequest.port++;
         }else{
             newRequest.package = p;
             newRequest.requestId = p.localId;
+        
+            struct timeval tv;
+            tv.tv_sec       = 1;
+            tv.tv_usec      = 1000;
+            
+            if (setsockopt(newRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+                perror("send Message Socket Error");
+            }
         }
         
         
@@ -131,20 +143,25 @@ RouterUp newSendRequestForPackage(Package p){
 int sendPackageWithRequest(RouterUp sendRequest){
     
     int sendTries = SEND_TRIES;
+    if (sendRequest.package.type==PACKAGE_TYPE_BROADCAST) {
+        sendTries=1;
+    }
+    
     int status;
+    
     
     while (sendTries--) {
         
-        struct timeval tv;
-        if (sendRequest.timeoutnsec>0) {
-            tv.tv_usec = sendRequest.timeoutnsec;
-        }else{
-            tv.tv_sec = 3;
-        }
-        if (setsockopt(sendRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
-            perror("send Message Socket Error");
-        }
-        
+//        struct timeval tv;
+//        if (sendRequest.timeoutnsec>0) {
+//            tv.tv_usec = sendRequest.timeoutnsec;
+//        }else{
+//            tv.tv_sec = 3;
+//        }
+//        if (setsockopt(sendRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+//            perror("send Message Socket Error");
+//        }
+//        
         status = 0;
         if (sendto(sendRequest.s, sendRequest.message, strlen(sendRequest.message) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
@@ -165,7 +182,7 @@ int sendPackageWithRequest(RouterUp sendRequest){
         {
     #ifdef DEBUG_LEVEL_3
             //die("recvfrom()");
-            printf("\nFALHA: Tentativa 3/%d de receber ACK %s:%d",sendTries,sendRequest.destination_IP, sendRequest.port);
+            printf("\nFALHA na tentativa de receber ACK %s:%d",sendRequest.destination_IP, sendRequest.port);
             
     #endif
         }else{
@@ -175,10 +192,6 @@ int sendPackageWithRequest(RouterUp sendRequest){
             break;
     #endif
         }
-    }
-    if (sendTries<1) {
-        printf("\nDEU PAU MESMO, nao tem como enviar para %s:%d",sendRequest.destination_IP, sendRequest.port);
-        return status;
     }
     return status;
 }
@@ -405,6 +418,55 @@ char * stringFromPackage(Package p){
     return str;
 }
 
+char * getBroadcastAdd(char *ip, int maskLevel){
+    char *str = NULL;
+    char** tokens;
+    char *toSplit[MAX_PACKAGE_SIZE];
+    strcpy((char*)toSplit, ip);
+    tokens = str_split((char*)toSplit, '.');
+    switch (maskLevel) {
+        case 1:
+            asprintf(&str, "%s.255.255.255",tokens[0]);
+            break;
+        case 2:
+            asprintf(&str, "%s.%s.255.255",tokens[0],tokens[1]);
+            break;
+        case 3:
+            asprintf(&str, "%s.%s.%s.255",tokens[0],tokens[1],tokens[2]);
+            break;
+        case 4:
+            asprintf(&str, "%s.%s.%s.%s",tokens[0],tokens[1],tokens[2],tokens[3]);
+            break;
+    }
+    return str;
+}
+
+void * sendLinksBroadcast(){
+    int x=0;
+    while (1) {
+        
+        Package p;
+        p.localId = conn.selfID;
+        p.destinationId = conn.routerList[x].id;
+        strcpy(p.destinationIP, getBroadcastAdd(conn.routerList[x].ip, 3));
+        p.ttl=255;
+        p.type=PACKAGE_TYPE_BROADCAST;
+        p.senderId=conn.routerList[x].id;
+        strcpy(p.senderIP, conn.routerList[x].ip);
+        strcpy(p.message, "BROADCAST MESSAGE");
+        p.status=PACKAGE_STATUS_READY;
+
+        RouterUp sendRequest = newSendRequestForPackage(p, conn.routerList[x].port);
+        sendPackageWithRequest(sendRequest);
+        sleep(1);
+        if (x==conn.routerCount-1) {
+            x=0;
+        }else{
+            x++;
+        }
+    }
+    return NULL;
+}
 
 void * flushSendBuffer(){
     while (1) {
@@ -417,30 +479,19 @@ void * flushSendBuffer(){
             Package p = sendingBuffer[index];
             if (p.status==PACKAGE_STATUS_READY) {
                 sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
-                if (p.type==PACKAGE_TYPE_BROADCAST) {
-                    for (int port = SENDING_RANGE_MIN_PORT; port <=SENDING_RANGE_MAX_PORT; port++) {
-                        RouterUp sendRequest = newSendRequestForPackage(p);
-                        sendRequest.port = port;
-                        int status = sendPackageWithRequest(sendRequest);
-                        sendRequest.timeoutnsec=30;
-                        printf("sendPackageWithRequest status %d",status);
-                    }
-                }else{
-                    RouterUp sendRequest = newSendRequestForPackage(p);
+                    RouterUp sendRequest = newSendRequestForPackage(p,8888);
                     int status = sendPackageWithRequest(sendRequest);
-                    printf("sendPackageWithRequest status %d",status);
+                switch (status) {
+                    case REQUEST_STATUS_ERROR:
+                        
+                        break;
+                    case REQUEST_STATUS_SEND_NO_ANSWER:
+                        
+                        break;
+                    case REQUEST_STATUS_OK:
+                        sendingBuffer[index].status= PACKAGE_STATUS_SENT;
+                        break;
                 }
-//                switch (status) {
-//                    case REQUEST_STATUS_ERROR:
-//                        
-//                        break;
-//                    case REQUEST_STATUS_SEND_NO_ANSWER:
-//                        
-//                        break;
-//                    case REQUEST_STATUS_OK:
-//                        sendingBuffer[index].status= PACKAGE_STATUS_SENT;
-//                        break;
-//                }
             }
         }
     }
@@ -457,8 +508,8 @@ void printRouter(router r){
     printf("ID: %d | Porta: %d | IP: %s\n",r.id,r.port,r.ip);
 }
 
-void printRouters(router r[routerCount]){
-    for (int x=0; x<routerCount; x++) { //teletar
+void printRouters(router r[conn.routerCount]){
+    for (int x=0; x<conn.routerCount; x++) { //teletar
         printRouter(r[x]);
     }
 }
@@ -466,8 +517,8 @@ void printRouters(router r[routerCount]){
 void printlink(linkr l){
     printf("FROM: %d | TO: %d | COST: %d\n",l.from,l.to,l.cost);
 }
-void printLinks(linkr l[linkCount]){
-    for (int x=0; x<linkCount; x++) {
+void printLinks(linkr l[conn.linksCount]){
+    for (int x=0; x<conn.linksCount; x++) {
         printlink(l[x]);
     }
 }
@@ -585,35 +636,39 @@ int main(int argc, const char * argv[]) {
     if (argc<2) { // É NECESSÁRIO AO MENOS O ID DO ROTEADOR PARA FUNCIONAMENTO
             printf("\n Usage: ./main <router id>\n");
     }else{
-    
-        autoIncrementalLocalRequestId=0;
-        
-        //WEB AND ROUTING STRUCTURES
-        struct router routers[MAX_ROUTERS];
-        struct linkr links[MAX_LINKS];
+
+        conn.selfID = atoi(argv[1]);
+
+        autoIncrementalLocalRequestId=0; //teletar?
         
         //CONFIG FILE READING
-        routerCount = readRouters(PATH_ROUTER_FILE, routers);
-        linkCount = readLinks(PATH_LINKS_FILE, links);
+        conn = readLinks(PATH_LINKS_FILE, conn);
+        conn = readRouters(PATH_ROUTER_FILE, conn);
+        
         
         //GATEWAY CONFIG INITIALIZATION
-        router self_router = routerOfIndex(atoi(argv[1]), routers);
+        router self_router = routerOfIndex(conn.selfID, conn.routerList);
         SelfRouter self;
         self.download.port = self_router.port;
         self.idNumber = self.download.idNumber = self_router.id;
         
         
-        //ROUTING PATHS
-        add_links(linkCount, links,routerCount);
-
-        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
-        prepareRoutingPaths(linkGraph);
-
-        
         pthread_t flushSendBufferSingleton;
         
         pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
+      
+        pthread_t sendLinksBroadcastSingleton;
         
+        pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
+     
+        
+        
+        //ROUTING PATHS
+        add_links(conn.linksCount, conn.linksList,conn.routerCount);
+        
+        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
+        prepareRoutingPaths(linkGraph);
+
         
 //        ROUTING SINGLETONS
         if (strcmp(argv[2], "c")==0) {
@@ -621,15 +676,14 @@ int main(int argc, const char * argv[]) {
             prepareForDownload(self.download);
             
             sleep(1); //preparation for singleton init
-            interface(routers, linkGraph, self);
+            interface(conn.routerList, linkGraph, self);
             //interface(routers/*, links*/,self);
         }else if(strcmp(argv[2], "r")==0){
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
             self.download = initDownClient(self.download);
 
-            routing(self, self.download, routers);
+            routing(self, self.download, conn.routerList);
         }
-
         
         
         

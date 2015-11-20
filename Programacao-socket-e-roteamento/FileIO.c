@@ -103,7 +103,7 @@ char** str_split(char* a_str, const char a_delim)
     return result;
 }
 
-int readRouters(char filepath[],struct router routers[MAX_ROUTERS]){
+connections readRouters(char filepath[], connections conn){
 
     char line[80];
     FILE *fr;
@@ -127,15 +127,21 @@ int readRouters(char filepath[],struct router routers[MAX_ROUTERS]){
         r.port = atoi(tokens[1]);
         strcpy(r.ip, tokens[2]);
         
-        routers[indx]=r;
-        
-        indx++;
+        int aux=conn.linksCount-1;
+        while (aux>=0) {
+            if (r.id==conn.linksList[aux].to) {
+                conn.routerList[indx]=r;
+                indx++;
+            }
+            aux--;
+        }
     }
     fclose(fr);
-    return indx;
+    conn.routerCount = indx;
+    return conn;
 }
 
-int readLinks(char filepath[],struct linkr links[MAX_LINKS]){
+connections readLinks(char filepath[],connections conn){
 
     char line[80];
     FILE *fr;
@@ -160,11 +166,13 @@ int readLinks(char filepath[],struct linkr links[MAX_LINKS]){
         l.to = atoi(tokens[1]);
         l.cost = atoi(tokens[2]);
         
-        links[indx]=l;
-        
-        indx++;
+        if (l.from==conn.selfID) {
+            conn.linksList[indx]=l;
+            indx++;
+        }
     }
     fclose(fr);
-    return indx;
+    conn.linksCount = indx;
+    return conn;
 }
 

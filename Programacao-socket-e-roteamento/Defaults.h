@@ -16,8 +16,8 @@
 
 
 //CONFIG FILE
-#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
@@ -27,7 +27,7 @@
 #define MAX_LINKS 50
 #define SENDING_BUFFER_SIZE 50
 
-#define MAX_PACKAGE_SIZE 999999
+#define MAX_PACKAGE_SIZE 9999
 #define MAX_USER_MSG_SIZE 1000
 #define MAX_PATH_STRING_SIZE 1000
 #define MAX_HEADER_SIZE 256
@@ -82,5 +82,12 @@ typedef struct linkr{
     char path[MAX_PATH_STRING_SIZE];
     int nodes;
 }linkr;
+
+typedef struct connections{
+    int selfID;
+    struct router routerList[MAX_ROUTERS];
+    struct linkr linksList[MAX_LINKS];
+    int routerCount, linksCount;
+}connections;
 
 #endif
