@@ -149,21 +149,13 @@ int sendPackageWithRequest(RouterUp sendRequest){
     
     int status;
     
+    char *messageString = stringFromPackage(sendRequest.package);
     
     while (sendTries--) {
         
-//        struct timeval tv;
-//        if (sendRequest.timeoutnsec>0) {
-//            tv.tv_usec = sendRequest.timeoutnsec;
-//        }else{
-//            tv.tv_sec = 3;
-//        }
-//        if (setsockopt(sendRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
-//            perror("send Message Socket Error");
-//        }
-//        
+
         status = 0;
-        if (sendto(sendRequest.s, sendRequest.message, strlen(sendRequest.message) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
+        if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
             //die("error sendto()");
             printf("\Erro ao enviar mensagem %d para %s:%d",sendRequest.requestId,sendRequest.destination_IP, sendRequest.port);
@@ -441,6 +433,17 @@ char * getBroadcastAdd(char *ip, int maskLevel){
     return str;
 }
 
+char * getLinkStringToBroadCast(connections conn){
+    char *str = "";
+    int x=conn.linksCount-1;
+    while (x>=0) {
+        asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
+        x--;
+    }
+
+    return str;
+}
+
 void * sendLinksBroadcast(){
     int x=0;
     while (1) {
@@ -453,7 +456,7 @@ void * sendLinksBroadcast(){
         p.type=PACKAGE_TYPE_BROADCAST;
         p.senderId=conn.routerList[x].id;
         strcpy(p.senderIP, conn.routerList[x].ip);
-        strcpy(p.message, "BROADCAST MESSAGE");
+        strcpy(p.message, getLinkStringToBroadCast(conn));
         p.status=PACKAGE_STATUS_READY;
 
         RouterUp sendRequest = newSendRequestForPackage(p, conn.routerList[x].port);
@@ -660,15 +663,12 @@ int main(int argc, const char * argv[]) {
         pthread_t sendLinksBroadcastSingleton;
         
         pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
-     
-        
         
         //ROUTING PATHS
         add_links(conn.linksCount, conn.linksList,conn.routerCount);
         
         struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
         prepareRoutingPaths(linkGraph);
-
         
 //        ROUTING SINGLETONS
         if (strcmp(argv[2], "c")==0) {

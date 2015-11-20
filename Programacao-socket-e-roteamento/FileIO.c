@@ -120,6 +120,7 @@ connections readRouters(char filepath[], connections conn){
 #ifdef DEBUG_LEVEL_3
 //        printf("Read Router link %s",line);
 #endif
+        strtok(line, "\n");
         char** tokens;
         router r;
         tokens = str_split(line, ' ');
