@@ -16,8 +16,8 @@
 
 
 //CONFIG FILE
-#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Programacao-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
@@ -33,7 +33,7 @@
 #define MAX_HEADER_SIZE 256
 
 //ROUTING CONFIGS
-#define SEND_TRIES 5
+#define SEND_TRIES 2
 
 //DEBUG
 #define DEBUG_LEVEL_1
@@ -43,7 +43,7 @@
 
 //SOCKET PORTS
 #define SENDING_RANGE_MAX_PORT 8899
-#define SENDING_RANGE_MIN_PORT 8800
+#define SENDING_RANGE_MIN_PORT 8884
 #define RECEIVING_RANGE_MAX_PORT 8799
 #define RECEIVING_RANGE_MIN_PORT 8700
 
@@ -53,10 +53,20 @@
 #define PACKAGE_STATUS_SENDING 2
 #define PACKAGE_STATUS_SENT 3
 
+#define PACKAGE_TYPE_BROADCAST 255
+#define PACKAGE_STATUS_READY 1
+#define PACKAGE_STATUS_SENDING 2
+#define PACKAGE_STATUS_SENT 3
+
+
+
 //REQUEST STATUS
 #define REQUEST_STATUS_ERROR 0
 #define REQUEST_STATUS_SEND_NO_ANSWER 1
 #define REQUEST_STATUS_OK 2
+
+#define REQUEST_TIMEOUT_NSEC 100
+
 
 //STRUCTS
 typedef struct router{

@@ -57,6 +57,7 @@ typedef struct RouterUp{
     char destination_IP[15];
     int requestId;
     Package package;
+    int timeoutnsec;
 }RouterUp;
 
 RouterUp initUpClient(RouterUp up);

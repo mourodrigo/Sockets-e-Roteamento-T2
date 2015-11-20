@@ -136,8 +136,11 @@ int sendPackageWithRequest(RouterUp sendRequest){
     while (sendTries--) {
         
         struct timeval tv;
-        tv.tv_sec = 3;
-        tv.tv_usec = 0;
+        if (sendRequest.timeoutnsec>0) {
+            tv.tv_usec = sendRequest.timeoutnsec;
+        }else{
+            tv.tv_sec = 3;
+        }
         if (setsockopt(sendRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
             perror("send Message Socket Error");
         }
@@ -404,22 +407,40 @@ char * stringFromPackage(Package p){
 
 
 void * flushSendBuffer(){
-    for (int index = 0; ; index++) {
-        Package p = sendingBuffer[index];
-        if (p.status==PACKAGE_STATUS_READY) {
-            RouterUp sendRequest = newSendRequestForPackage(p);
-            sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
-            int status = sendPackageWithRequest(sendRequest);
-            switch (status) {
-                case REQUEST_STATUS_ERROR:
-                    
-                    break;
-                case REQUEST_STATUS_SEND_NO_ANSWER:
-                    
-                    break;
-                case REQUEST_STATUS_OK:
-                    sendingBuffer[index].status= PACKAGE_STATUS_SENT;
-                    break;
+    while (1) {
+//        sleep(1);
+        
+        for (int index = 0; sendingBufferIndex; index++) {
+            if (index>sendingBufferIndex) {
+                index=0;
+            }
+            Package p = sendingBuffer[index];
+            if (p.status==PACKAGE_STATUS_READY) {
+                sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
+                if (p.type==PACKAGE_TYPE_BROADCAST) {
+                    for (int port = SENDING_RANGE_MIN_PORT; port <=SENDING_RANGE_MAX_PORT; port++) {
+                        RouterUp sendRequest = newSendRequestForPackage(p);
+                        sendRequest.port = port;
+                        int status = sendPackageWithRequest(sendRequest);
+                        sendRequest.timeoutnsec=30;
+                        printf("sendPackageWithRequest status %d",status);
+                    }
+                }else{
+                    RouterUp sendRequest = newSendRequestForPackage(p);
+                    int status = sendPackageWithRequest(sendRequest);
+                    printf("sendPackageWithRequest status %d",status);
+                }
+//                switch (status) {
+//                    case REQUEST_STATUS_ERROR:
+//                        
+//                        break;
+//                    case REQUEST_STATUS_SEND_NO_ANSWER:
+//                        
+//                        break;
+//                    case REQUEST_STATUS_OK:
+//                        sendingBuffer[index].status= PACKAGE_STATUS_SENT;
+//                        break;
+//                }
             }
         }
     }
@@ -493,7 +514,22 @@ void chat(struct router destination_router,struct linkr router_path,SelfRouter s
 
 
 void interface(struct router routers[MAX_ROUTERS],struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS],SelfRouter self_router){
+    while (1) {
+        int option = 1;
+        char * package[MAX_USER_MSG_SIZE];
+        printf("\nPacote a enviar: ");
+        scanf("%s",package);
 
+//        printf("1- Enviar pacote");
+//        scanf("%d",&option);
+        Package new = packageFromString((char*)package);
+        new.status=PACKAGE_STATUS_READY;
+        addSendPackageToBuffer(new);
+        
+        
+        
+    }
+    
         linkr l;
         router r;
         r = chooseDestination(self_router, routers, linkGraph);
@@ -570,42 +606,16 @@ int main(int argc, const char * argv[]) {
         //ROUTING PATHS
         add_links(linkCount, links,routerCount);
 
-        
-        Package p;
-        p.localId = 111;
-        strcpy(p.senderIP, "127.0.0.123");
-        p.ttl = 255;
-        p.type = 3;
-        strcpy(p.destinationIP, "127.0.0.1");
-        p.senderId = 1;
-        strcpy(p.message, "MESSAGEEEEE");
-        p.destinationId = 123;
-        
+        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
+        prepareRoutingPaths(linkGraph);
 
-        
-        char *str = stringFromPackage(p);
-        
-        Package newpackage = packageFromString(str);
-        
-        
-        char *str1 = "112@123@127.0.0.1@255@3@1@192.168.25.25@m4";
-        
-        addSendPackageToBuffer(packageFromString(str));
-        addSendPackageToBuffer(packageFromString("112@123@127.0.0.1@255@3@1@192.168.25.25@m4"));
-        addSendPackageToBuffer(packageFromString("113@123@127.0.0.1@255@3@1@192.168.25.25@m3"));
-        addSendPackageToBuffer(packageFromString("114@123@127.0.0.1@255@3@1@192.168.25.25@m2"));
-        addSendPackageToBuffer(packageFromString("115@123@127.0.0.1@255@3@1@192.168.25.25@M1"));
         
         pthread_t flushSendBufferSingleton;
         
         pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
-
         
         
-        
-        struct linkr linkGraph[MAX_ROUTERS][MAX_ROUTERS];
-        prepareRoutingPaths(linkGraph);
-        
+//        ROUTING SINGLETONS
         if (strcmp(argv[2], "c")==0) {
             //SINGLETON FOR DOWNLOAD/LISTENING DATA
             prepareForDownload(self.download);
@@ -613,13 +623,55 @@ int main(int argc, const char * argv[]) {
             sleep(1); //preparation for singleton init
             interface(routers, linkGraph, self);
             //interface(routers/*, links*/,self);
-        }else if((int)argv[2] == 'r'){
+        }else if(strcmp(argv[2], "r")==0){
             printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
             self.download = initDownClient(self.download);
 
             routing(self, self.download, routers);
         }
-//        
+
+        
+        
+        
+        //        char *str1 = "112@123@127.0.0.1@255@3@1@192.168.25.25@m4";
+        //
+        //        addSendPackageToBuffer(packageFromString(str));
+        //        addSendPackageToBuffer(packageFromString("112@123@127.0.0.1@255@3@1@192.168.25.25@m4"));
+        //        addSendPackageToBuffer(packageFromString("113@123@127.0.0.1@255@3@1@192.168.25.25@m3"));
+        //        addSendPackageToBuffer(packageFromString("114@123@127.0.0.1@255@3@1@192.168.25.25@m2"));
+        //        addSendPackageToBuffer(packageFromString("115@123@127.0.0.1@255@3@1@192.168.25.25@M1"));
+        //
+        
+        
+        
+        
+        
+        Package p;
+        p.localId = 2;
+        strcpy(p.senderIP, "127.0.0.123");
+        p.ttl = 255;
+        p.type = PACKAGE_TYPE_BROADCAST;
+        strcpy(p.destinationIP, "127.0.0.1");
+        p.senderId = 2;
+        strcpy(p.message, "MESSAGEEEEE");
+        p.destinationId = 2;
+        p.status = PACKAGE_STATUS_READY;
+        //        Package pp = {111,222,"192.168.255.255",255,255,255,"127.1.0.1","Message!!",123};
+        //
+        //
+        char *str = stringFromPackage(p);
+        //
+        Package newpackage = packageFromString(str);
+        
+        //2@2@127.0.0.1@255@255@2@127.0.0.123@MESSAGEEEEE
+        
+        addSendPackageToBuffer(p);
+        addSendPackageToBuffer(p);
+        addSendPackageToBuffer(p);
+        addSendPackageToBuffer(p);
+        addSendPackageToBuffer(p);
+        
+        //
 //        router self_router;
 //        self_router.id = 1;
 //        strcpy(self_router.ip, "127.0.0.1");
@@ -639,11 +691,9 @@ int main(int argc, const char * argv[]) {
 //        prepareForDownload(selfi.download);
 
         
-        
-        
-        
-        
-    
+//        Edge Arestas[10] = {{0,1,1},{1,2,2},{2,3,3}};
+        // BellmanFord(Estrutura, arestas, vertices,origem);
+//        BellmanFord(Arestas, 2, 3, 1);
     }
     return 0;
 }
