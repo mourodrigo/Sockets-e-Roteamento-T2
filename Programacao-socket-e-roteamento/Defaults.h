@@ -16,8 +16,8 @@
 
 
 //CONFIG FILE
-#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
@@ -36,10 +36,13 @@
 #define SEND_TRIES 2
 
 //DEBUG
-#define DEBUG_LEVEL_1
-#define DEBUG_LEVEL_2
-#define DEBUG_LEVEL_3
-#define DEBUG_LEVEL_4
+#define DEBUG_ERROR_ONLY 1
+#define DEBUG_WARNING 2
+#define DEBUG_PACKAGE_ROUTING 3
+#define DEBUG_ROUTING_TABLE 4
+#define DEBUG_REQUEST_FAILS 5
+#define DEBUG_REQUEST_BROADCAST 6
+#define DEBUG_ALL 7
 
 //SOCKET PORTS
 #define SENDING_RANGE_MAX_PORT 8899
