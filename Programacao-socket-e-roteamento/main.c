@@ -14,8 +14,12 @@
 #pragma mark - ROUTING MANAGE
 //======================================================
 Package sendingBuffer[SENDING_BUFFER_SIZE];
+Package receivingBuffer[SENDING_BUFFER_SIZE];
+int sendingBufferIndex, receivingBufferIndex;
+
 struct connections conn;
-int sendingBufferIndex, autoIncrementalLocalRequestId; //teletar
+int autoIncrementalLocalRequestId; //teletar
+
 int stdOutDebugLevel;
 
 
@@ -293,6 +297,10 @@ void * startDownListen(void){ //listener to download data on thread
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(conn.downloadSocket.si_other.sin_addr), ntohs(conn.downloadSocket.si_other.sin_port));
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nConteúdo: %s\n" , conn.downloadSocket.buf);
             
+            //add to buffer
+            receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
+            receivingBufferIndex++;
+            
             //now reply the client with the same data
             if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
@@ -322,48 +330,29 @@ void closeDown(downloadSocket down){
 //========================================
 
 
-void routing(connections conn){
-    
-    //keep listening for data
-    if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
-    
-    char * selfstr = "";
-    asprintf(&selfstr,"%s%s|",routerToString(conn.selfRouter),"");
-
-    
-    if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("IDENTIFICADOR: %s",selfstr);
-    while(1)
-    {
-        fflush(stdout);
-        //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
-        memset(conn.downloadSocket.buf,'\0', MAX_USER_MSG_SIZE);
-        
-        //try to receive some data, this is a blocking call
-        if ((conn.downloadSocket.recv_len = recvfrom(conn.downloadSocket.s, conn.downloadSocket.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &conn.downloadSocket.si_other, &conn.downloadSocket.slen)) == -1)
-        {
-            die("recvfrom()");
+void * routing(){
+    while (1) {
+        if (receivingBufferIndex>0) {
+            int indx = receivingBufferIndex;
+            while (indx) {
+                Package p = receivingBuffer[receivingBufferIndex];
+                switch (p.type) {
+                    case PACKAGE_TYPE_BROADCAST:
+                        printLinks(conn);
+                        printf("%s",p.message);
+                        break;
+                    case PACKAGE_TYPE_MESSAGE:
+                        
+                        break;
+                    default:
+//                        indx--;
+                    break;
+                
+            }
+            }
+        }else{
+            sleep(1);
         }
-        
-        //now reply the client with the same data
-        if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
-        {
-            die("sendto()");
-        }
-        
-//        char *routedMessage = replace(conn.downloadSocket.buf, routerToString(routerOfIndex(conn.downloadSocket.idNumber, routers)), "");
-//        char** tokens;
-//        tokens = str_split(routedMessage, '|');
-//        
-//        routedMessage = replace(conn.downloadSocket.buf, routerToString(routerOfIndex(conn.downloadSocket.idNumber, routers)), "");
-//
-//        if (!tokens[2]) {
-//            printf("\n\nMensagem recebida de %s", replace(routedMessage, "~|", " Conteúdo: "));
-//        }else{
-//            char * forward = replace(conn.downloadSocket.buf, selfstr, "");
-//            printf("\n\nEncaminhando pacote %s", forward);
-//            sendPackage(forward);
-//        }
     }
 }
 
@@ -696,6 +685,11 @@ int main(int argc, const char * argv[]) {
         pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
         
         pthread_t downloadSocketSingleton = initDownloadSocketThread(&conn);
+
+        pthread_t routingSingleton;
+        pthread_create(&routingSingleton, NULL, routing, NULL);
+
+        
         sleep(1); // tempo para o socket de download ser inicializado
         interface(conn);
         
