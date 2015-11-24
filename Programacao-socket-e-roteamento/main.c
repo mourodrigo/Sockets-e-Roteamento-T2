@@ -40,6 +40,16 @@ router routerOfIndex(int indx, router r[conn.routerCount]){ //teletar?
     return null;
 }
 
+int indexOfLinkInConnections(linkr l, connections conn){
+    for (int x =0; x<conn.linksCount; x++) {
+        if (l.from == conn.linksList[x].from &&
+            l.to == conn.linksList[x].to &&
+            l.cost == conn.linksList[x].cost) {
+            return x;
+        }
+    }
+    return -1;
+}
 
 char * routerToString(router r){
     char *router_str;
@@ -312,6 +322,12 @@ void closeDown(downloadSocket down){
 #pragma mark - PACKAGE ROUTING
 //========================================
 
+void updateRoutingTableWithPackage(Package p){
+    
+    //criar o algoritmo de convergencia dos vetores de distancia
+    
+    
+}
 
 void * routing(){
     while (1) {
@@ -321,8 +337,7 @@ void * routing(){
                 Package p = receivingBuffer[receivingBufferIndex];
                 switch (p.type) {
                     case PACKAGE_TYPE_BROADCAST:
-                        printLinks(conn);
-                        printf("%s",p.message);
+                        updateRoutingTableWithPackage(p);
                         break;
                     case PACKAGE_TYPE_MESSAGE:
                         
@@ -550,29 +565,84 @@ void chat(struct router destinationRouter, connections conn){
     }
 }
 
+int addLink(connections *conn, char linktxt[10]){
+    int status = 0;
+    if (linktxt==NULL) {
+        printf("\n\n=====[Inserir enlace]=====\nAdicione as informações do enlace no formato: origem-destino-custo:\n");
+        scanf("%9s",linktxt);
+    }
+    linkr l = linkFromChar(linktxt, '-');
+    if (indexOfLinkInConnections(l, *conn)<0) {
+        conn->linksList[conn->linksCount] = l;
+        conn->linksCount++;
+        return 1;
+    }else{
+        return 0;
+    }
+    return status;
+}
 
-void interface(connections conn){
+
+int editLink(connections *conn, char linktxt[10]){
+    int status = 0;
+    printlink(*conn->linksList);
+    int indx=-1;
+    while (indx<0) {
+        printf("\n\n=====[Editar enlace]=====\nAdicione as informações do enlace à ser editado no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
+        scanf("%9s",linktxt);
+        linkr l = linkFromChar(linktxt, '-');
+        indx=indexOfLinkInConnections(l, *conn);
+        if (indx>=0) {
+            printf("\n\nInsira o novo custo para de %d para %d: ",l.from, l.to);
+            scanf("%d",&conn->linksList[indx].cost);
+            return 1;
+        }else{
+            return 0;
+        }
+
+    }
+
+    return status;
+}
+
+void interface(connections *conn){
     char option[10] = ":menu";
     while (1) {
 
             if (strcmp(option, "1")==0) {
                 println(5);
                 printf("\n\n=====[Tabela de roteamento]=====\n");
-                printLinks(conn);
-                printf("\n\n=====[Detalhamento dos nos encontrados]=====\n");
-                printRouters(conn);
+                printLinks(*conn);
+                printf("=====[Detalhamento dos nos encontrados]=====\n");
+                printRouters(*conn);
+                printf("\n\n [ 1 ] Adicionar enlace\n [ 2 ] Editar enlace\n [ 3 ] Remover enlace \n Selecione um item (:menu para voltar):");
+                scanf("%9s",option);
+                if (strcmp(option, "1")==0) {
+                    if (addLink(conn, NULL)) {
+                        printf("\n\nEnlace adicionado!!\n\n");
+                    }else{
+                        printf("\n\nEnlace já existente!!\n\n");
+                    }
+                }else if (strcmp(option, "2")==0) {
+                    
+                }else if (strcmp(option, "3")==0) {
+                
+                }else{
+                    
+                }
+                
             }
             if (strcmp(option, "2")==0) {
                 println(5);
                 printf("\n\n=====[Tabela de roteamento]=====\n");
-                printLinks(conn);
+                printLinks(*conn);
                 printf("\n\n=====[Detalhamento dos nos encontrados]=====\n");
-                printRouters(conn);
+                printRouters(*conn);
                 router r;
 //                while (r.id<0) {
-                    r = chooseDestination(conn);
+                    r = chooseDestination(*conn);
 //                }
-                chat(r, conn);
+                chat(r, *conn);
 
             }
             if (strcmp(option, "3")==0) {
@@ -668,7 +738,7 @@ int main(int argc, const char * argv[]) {
 
         
         sleep(1); // tempo para o socket de download ser inicializado
-        interface(conn);
+        interface(&conn);
         
         //GATEWAY CONFIG INITIALIZATION
 //        router self_router = routerOfIndex(conn.selfID, conn.routerList);

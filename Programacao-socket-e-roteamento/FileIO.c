@@ -143,6 +143,17 @@ connections readRouters(char filepath[], connections conn){
     return conn;
 }
 
+linkr linkFromChar(char *text, char separator){
+    char** tokens;
+    linkr l;
+    tokens = str_split(text, separator);
+    
+    l.from = atoi(tokens[0]);
+    l.to = atoi(tokens[1]);
+    l.cost = atoi(tokens[2]);
+    return l;
+}
+
 connections readLinks(char filepath[],connections conn){
 
     char line[80];
