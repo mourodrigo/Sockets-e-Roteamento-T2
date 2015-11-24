@@ -40,6 +40,7 @@ typedef struct Package{
     char senderIP[15];
     char message[MAX_USER_MSG_SIZE];
     int status;
+    int port;
 }Package;
 
 

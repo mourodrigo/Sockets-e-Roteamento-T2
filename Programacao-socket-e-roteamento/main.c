@@ -99,10 +99,10 @@ uploadSocket initUpClient(uploadSocket up){ //teletar
 }
 
 
-uploadSocket newSendRequestForPackage(Package p, int portNumber){
+uploadSocket newSendRequestForPackage(Package p){
 
     uploadSocket newRequest;
-    newRequest.port = portNumber;
+    newRequest.port = p.port;
     newRequest.requestId = 0;
     strcpy(newRequest.destination_IP, p.destinationIP);
     
@@ -123,7 +123,6 @@ uploadSocket newSendRequestForPackage(Package p, int portNumber){
 
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
             
-            newRequest.port++;
         }else{
             newRequest.package = p;
             newRequest.requestId = p.localId;
@@ -197,22 +196,6 @@ void closeUp(uploadSocket up){
     printf("Up Client Closed\n");
 #endif
 }
-
-void sendPackage(char *s){//teletar
-//    RouterUp request;
-//    char string[MAX_HEADER_SIZE];
-//    
-//    strcpy(string, s);
-//    char **a = str_split(string, '~');
-//    char **b = str_split(a[1], '|');
-//
-//    router r = stringToRouter(b[0]);
-//    request= upRequest(r, s);
-//    request=initUpClient(request);
-//    sendMessage(request);
-}
-
-
 
 void addSendPackageToBuffer(Package p){
     sendingBuffer[sendingBufferIndex] = p;
@@ -369,12 +352,13 @@ Package packageFromString(char *s){
     p.localId = atoi(tokens[0]);
     p.destinationId = atoi(tokens[1]);
     strcpy(p.destinationIP, tokens[2]);
-    p.ttl = atoi(tokens[3]);
-    p.type = atoi(tokens[4]);
-    p.senderId = atoi(tokens[5]);
-    strcpy(p.senderIP, tokens[6]);
-    strcpy(p.message, tokens[7]);
-//    p.status = atoi(tokens[8]);
+    p.port = atoi(tokens[3]);
+    p.ttl = atoi(tokens[4]);
+    p.type = atoi(tokens[5]);
+    p.senderId = atoi(tokens[6]);
+    strcpy(p.senderIP, tokens[7]);
+    strcpy(p.message, tokens[8]);
+    p.status = PACKAGE_STATUS_READY;
     
     return p;
 }
@@ -383,10 +367,11 @@ Package packageFromString(char *s){
 char * stringFromPackage(Package p){
     char *str;
     char separator = '@';
-    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
+    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%d%c%s%c%s",
              p.localId,separator,
              p.destinationId,separator,
              p.destinationIP,separator,
+             p.port,separator,
              p.ttl,separator,
              p.type,separator,
              p.senderId,separator,
@@ -444,8 +429,9 @@ void * sendLinksBroadcast(){
         strcpy(p.senderIP, conn.routerList[x].ip);
         strcpy(p.message, getLinkStringToBroadCast(conn));
         p.status=PACKAGE_STATUS_READY;
+        p.port = conn.routerList[x].port;
 
-        uploadSocket sendRequest = newSendRequestForPackage(p, conn.routerList[x].port);
+        uploadSocket sendRequest = newSendRequestForPackage(p);
         sendPackageWithRequest(sendRequest);
         if (x==conn.routerCount-1) {
             sleep(10);
@@ -469,7 +455,7 @@ void * flushSendBuffer(){
             Package p = sendingBuffer[index];
             if (p.status==PACKAGE_STATUS_READY) {
                 sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
-                    uploadSocket sendRequest = newSendRequestForPackage(p,8888);
+                    uploadSocket sendRequest = newSendRequestForPackage(p);
                     int status = sendPackageWithRequest(sendRequest);
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
@@ -536,12 +522,17 @@ router chooseDestination(connections conn){
 
 void chat(struct router destinationRouter, connections conn){
 
-    uploadSocket request;
     char message[MAX_USER_MSG_SIZE];
     
     sleep(1);
     while (1) {
-    
+ 
+        printf("\n( :menu to exit) Your message: ");
+        scanf("%s",message);
+        if (strcmp(":menu", message)==0) {
+            break;
+        }
+        
         Package p;
         p.localId = conn.selfID;
         p.destinationId = destinationRouter.id;
@@ -551,25 +542,11 @@ void chat(struct router destinationRouter, connections conn){
         p.senderId=conn.selfRouter.id;
         strcpy(p.senderIP, destinationRouter.ip);
         p.status=PACKAGE_STATUS_READY;
-        strcpy(p.message, getLinkStringToBroadCast(conn));
+        strcpy(p.message, message);
+        p.port = destinationRouter.port;
+        addSendPackageToBuffer(p);
+
         
-    
-        request= upRequest(destinationRouter, message);
-        request=initUpClient(request);
-        char header[MAX_HEADER_SIZE];
-        char *content;
-        
-//        strcpy(header, getHeader(router_path, routers)); //header
-        
-        printf("\n( :menu to exit) Your message: ");
-        scanf("%s",message);
-        if (strcmp(":menu", message)==0) {
-            break;
-        }
-        asprintf(&content,"%s%s",header,message);
-        
-        strcpy(request.message, content);
-        sendPackage(request.message);
     }
 }
 
