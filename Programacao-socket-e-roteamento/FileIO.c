@@ -178,7 +178,11 @@ connections readLinks(char filepath[],connections conn){
         l.from = atoi(tokens[0]);
         l.to = atoi(tokens[1]);
         l.cost = atoi(tokens[2]);
-        
+        l.isDirectlyConnected=1;
+        if (l.to==conn.selfID) {
+            l.to=l.from;
+            l.from=conn.selfID;
+        }
         if (l.from==conn.selfID) {
             conn.linksList[indx]=l;
             indx++;

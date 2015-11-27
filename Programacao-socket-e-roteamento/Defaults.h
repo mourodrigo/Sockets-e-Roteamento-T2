@@ -23,8 +23,8 @@
 #define LINKS_FILE_NAME "enlaces.config"
 
 //MAX SIZE FOR ARRAYS
-#define MAX_ROUTERS 50
-#define MAX_LINKS 50
+#define MAX_ROUTERS 20
+#define MAX_LINKS 20
 #define SENDING_BUFFER_SIZE 50
 
 #define MAX_PACKAGE_SIZE 9999

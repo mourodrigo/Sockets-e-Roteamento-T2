@@ -76,7 +76,7 @@ typedef struct linkr{
     int to;
     int cost;
     char path[MAX_PATH_STRING_SIZE];
-    int nodes;
+    int isDirectlyConnected;
 }linkr;
 
 typedef struct connections{
@@ -87,6 +87,7 @@ typedef struct connections{
     int routerCount, linksCount;
     struct uploadSocket uploadSocket;
     struct downloadSocket downloadSocket;
+    struct linkr routingTable[MAX_LINKS][MAX_LINKS];
 }connections;
 
 

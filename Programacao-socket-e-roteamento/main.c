@@ -78,6 +78,15 @@ router stringToRouter(char *s){
     return r;
 }
 
+void updateRoutingTable(connections conn){
+//    for (int x=0; x<conn.linksCount; x++) {
+//        linkr l = conn.linksList[x];
+//        if (conn.routingTable[l.from][l.to].cost>l.cost) {
+//            conn.routingTable[l.from][l.to].cost
+//        }
+//    }
+}
+
 
 //======================================================
 #pragma mark - UPLOAD
@@ -419,12 +428,14 @@ char * getBroadcastAdd(char *ip, int maskLevel){
     return str;
 }
 
-char * getLinkStringToBroadCast(connections conn){
+char * getLinkStringToBroadCast(connections conn, linkr l){
     char *str = "";
-    int x=conn.linksCount-1;
-    while (x>=0) {
-        asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
-        x--;
+    int y=conn.linksCount-1;
+    while (y>=0) {
+        if (l.to!=conn.linksList[y].to) {
+            asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[y].from,conn.linksList[y].to,conn.linksList[y].cost+l.cost);
+        }
+        y--;
     }
 
     return str;
@@ -433,27 +444,29 @@ char * getLinkStringToBroadCast(connections conn){
 void * sendLinksBroadcast(){
     int x=0;
     while (1) {
-        
-        Package p;
-        p.localId = conn.selfID;
-        p.destinationId = conn.routerList[x].id;
-        strcpy(p.destinationIP, getBroadcastAdd(conn.routerList[x].ip, 4));
-        p.ttl=255;
-        p.type=PACKAGE_TYPE_BROADCAST;
-        p.senderId=conn.routerList[x].id;
-        strcpy(p.senderIP, conn.routerList[x].ip);
-        strcpy(p.message, getLinkStringToBroadCast(conn));
-        p.status=PACKAGE_STATUS_READY;
-        p.port = conn.routerList[x].port;
-
-        uploadSocket sendRequest = newSendRequestForPackage(p);
-        sendPackageWithRequest(sendRequest);
-        if (x==conn.routerCount-1) {
+        if (conn.linksList[x].isDirectlyConnected) {
+            Package p;
+            p.localId = conn.selfID;
+            p.destinationId = conn.linksList[x].to;
+            strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
+            p.ttl=255;
+            p.type=PACKAGE_TYPE_BROADCAST;
+            p.senderId=conn.routerList[x].id;
+            strcpy(p.senderIP, conn.routerList[x].ip);
+            strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
+            p.status=PACKAGE_STATUS_READY;
+            p.port = conn.routerList[x].port;
+            
+            uploadSocket sendRequest = newSendRequestForPackage(p);
+            sendPackageWithRequest(sendRequest);
+        }
+        if (x==conn.linksCount-1) {
             sleep(10);
             x=0;
         }else{
             x++;
         }
+
 
     }
     return NULL;
@@ -680,27 +693,6 @@ uploadSocket upRequest(router destination, char message[MAX_USER_MSG_SIZE]){
     return request;
 }
 
-
-char * getHeader(linkr l,struct router routers[MAX_ROUTERS]){
-    char *line="";
-    
-    char** tokens;
-    
-    char *path_to_split[MAX_ROUTERS];
-    strcpy((char*)path_to_split, l.path);
-    tokens = str_split((char*)path_to_split, '-');
-    
-    for (int x = 0; x<=l.nodes ; x++) {
-        router r = routerOfIndex(atoi(tokens[x]), routers);
-        if (!x) {
-            asprintf(&line,"%s%s~",line,routerToString(r));
-        }else{
-            asprintf(&line,"%s%s|",line,routerToString(r));
-        }
-    }
-    
-    return line;
-}
 
 //========================================
 #pragma mark - MAIN
