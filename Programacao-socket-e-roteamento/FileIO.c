@@ -180,8 +180,8 @@ connections readLinks(char filepath[],connections conn){
         if (l.from==conn.selfID) {
             conn.linksList[indx]=l;
             indx++;
-            //conn.routingTable[l.from][l.to]=l;
-            //conn.routingTable[l.to][l.from]=l;
+            conn.routingTable[l.from][l.to]=l;
+            conn.routingTable[l.to][l.from]=l;
         }
         
     }

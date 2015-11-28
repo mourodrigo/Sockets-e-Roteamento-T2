@@ -707,25 +707,24 @@ void chat(struct router destinationRouter, connections conn){
 
 void presentRoutingTable(connections conn){
     printf("\n=====[TABELA DE ROTEAMENTO]=====\n\n   ");
-    for (int x=-2; x<conn.linksCount; x++) {
-        if (x==-2) {
-            for (int y=0; y<conn.routerCount; y++) {
-                printf(" %2d ",conn.routerList[y].id);
-            }
-            printf("\n");
-        }else if (x==-1) {
-            for (int y=0; y<conn.routerCount; y++) {
-                printf("----");
-            }
-        }
-        else{
+    for (int y=0; y<conn.routerCount; y++) {
+        printf(" %2d ",conn.routerList[y].id);
+    }
+    printf("\n--+");
+    for (int y=0; y<conn.routerCount; y++) {
+        printf("----");
+    }
+
+    for (int x=0; x<MAX_LINKS; x++) {
+        if (conn.routerList[x].id>0) {
             printf("\n%2d|",conn.routerList[x].id);
-            for (int y=0; y<conn.linksCount; y++) {
-                printf(" %2d ",conn.routingTable[x][y].cost);
+            for (int y=0; y<conn.routerCount; y++) {
+                    printf(" %2d ",conn.routingTable[conn.routerList[x].id][conn.routerList[y].id].cost);
             }
         }
         
     }
+        
 }
 
 void interface(connections *conn){
@@ -791,7 +790,7 @@ void interface(connections *conn){
 //            if (strcmp(option, ":menu")==0) {
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
-            printf("[ 1 ] Ver tabela de roteamento\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
+            printf("[ 1 ] Enlaces e nos conectados\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
             printf("[ 4 ] Tabela de roteamento\nSelecione um item: ");
 //            }
         
@@ -839,6 +838,7 @@ int main(int argc, const char * argv[]) {
         //CONFIG FILE READING
         conn = readLinks(PATH_LINKS_FILE, conn);
         conn = readRouters(PATH_ROUTER_FILE, conn);
+        addRouter(&conn, conn.selfRouter);
         
         pthread_t flushSendBufferSingleton;
         pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
