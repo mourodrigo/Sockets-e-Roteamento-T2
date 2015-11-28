@@ -183,7 +183,7 @@ int sendPackageWithRequest(uploadSocket sendRequest){
             return status;
         }else{
             status++;
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nMensagem id %d enviada para %s:%d",sendRequest.requestId,sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n-> %s",stringFromPackage(sendRequest.package));
         }
         
         //receive a reply and print it
@@ -195,12 +195,12 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         {
     #ifdef DEBUG_LEVEL_3
             //die("recvfrom()");
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\nFALHA na tentativa de receber ACK %s:%d",sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK %s:%d",sendRequest.destination_IP, sendRequest.port);
             
     #endif
         }else{
     #ifdef DEBUG_LEVEL_3
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n\nConfirmação de recebimento: %s:%d",sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n\n<=> Confirmação de recebimento: %s:%d",sendRequest.destination_IP, sendRequest.port);
             return ++status;
             break;
     #endif
@@ -296,12 +296,16 @@ void * startDownListen(void){ //listener to download data on thread
 //            printf("\nerro recvfrom() timeout\n");
         }else{
             //print details of the client/peer and the data received
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(conn.downloadSocket.si_other.sin_addr), ntohs(conn.downloadSocket.si_other.sin_port));
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nConteúdo: %s\n" , conn.downloadSocket.buf);
+//            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(conn.downloadSocket.si_other.sin_addr), ntohs(conn.downloadSocket.si_other.sin_port));
+            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
             
             //add to buffer
-            receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
-            receivingBufferIndex++;
+            if (receivingBufferIndex==SENDING_BUFFER_SIZE) {
+                printf("BUFFER CHEIO!!!!!!!!!!!!!!!!");
+            }else{
+                receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
+                receivingBufferIndex++;
+            }
             
             //now reply the client with the same data
             if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
@@ -451,11 +455,11 @@ void * sendLinksBroadcast(){
             strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
             p.ttl=255;
             p.type=PACKAGE_TYPE_BROADCAST;
-            p.senderId=conn.routerList[x].id;
+            p.senderId=routerOfIndex(conn.linksList[x].to, conn.routerList).id;
             strcpy(p.senderIP, conn.routerList[x].ip);
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
-            p.port = conn.routerList[x].port;
+            p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
             
             uploadSocket sendRequest = newSendRequestForPackage(p);
             sendPackageWithRequest(sendRequest);
