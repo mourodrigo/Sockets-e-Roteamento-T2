@@ -78,6 +78,128 @@ router stringToRouter(char *s){
     return r;
 }
 
+int addRouter(connections *conn, router r){
+    conn->routerList[conn->routerCount]=r;
+    conn->routerCount++;
+    return 1;
+}
+
+int removeRouter(connections *conn, router r){
+    int indx=-2;
+    for (int x=0; x<conn->routerCount; x++) {
+        if (conn->routerList[x].id==r.id) {
+            indx=x;
+        }
+    }
+
+    if (indx<0) {
+        printf("Nó nao encontrado");
+    }else if (indx>=0) {
+        router newRouter;
+        if (indx==conn->routerCount-1) {
+            conn->routerList[indx]=newRouter;
+            conn->routerCount--;
+        }else{
+            conn->routerList[indx]=conn->routerList[conn->routerCount-1];
+            conn->routerList[conn->routerCount-1]=newRouter;
+            conn->routerCount--;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int addLink(connections *conn, char linktxt[10]){
+    int status = 0;
+    linkr l;
+    if (strcmp(linktxt, "")==0) {
+        printf("\n\n=====[Inserir enlace]=====\nAdicione as informações do enlace no formato: origem-destino-custo:\n");
+        char linktxta[10];
+        scanf("%s",linktxta);
+        l = linkFromChar(linktxta, '-');
+    }else{
+        l = linkFromChar(linktxt, '-');
+    }
+    if (indexOfLinkInConnections(l, *conn)<0) {
+        conn->linksList[conn->linksCount] = l;
+        conn->linksCount++;
+        if (routerOfIndex(l.to, conn->routerList).id<0) {
+            router r;
+            r.id = l.to;
+            sprintf(r.ip, "%d",l.from);
+            r.port = -1;
+        }
+        return 1;
+    }else{
+        return 0;
+    }
+    return status;
+}
+
+
+int editLink(connections *conn, char linktxt[10]){
+    int status = 0;
+    int indx=-1;
+    while (indx<0) {
+        linkr l;
+        if (strcmp(linktxt, "")==0) {
+            printf("\n\n=====[Editar enlace]=====\n");
+            printf("Adicione as informações do enlace à ser editado no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
+            char linktxta[10];
+            scanf("%s",linktxta);
+            l = linkFromChar(linktxta, '-');
+        }else{
+            l = linkFromChar(linktxt, '-');
+        }
+        indx=indexOfLinkInConnections(l, *conn);
+        if (indx>=0) {
+            printf("\n\nInsira o novo custo para de %d para %d: ",l.from, l.to);
+            scanf("%d",&conn->linksList[indx].cost);
+            return 1;
+        }else{
+            return 0;
+        }
+        
+    }
+    
+    return status;
+}
+
+int removeLink(connections *conn, char linktxt[10]){
+    int status = 0;
+    int indx=-1;
+    while (indx<0) {
+        linkr l;
+        if (strcmp(linktxt, "")==0) {
+            printf("\n\n=====[Remove enlace]=====\n");
+            printf("Adicione as informações do ENLACE à ser REMOVIDO no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
+            char linktxta[10];
+            scanf("%s",linktxta);
+            l = linkFromChar(linktxta, '-');
+        }else{
+            l = linkFromChar(linktxt, '-');
+        }
+        indx=indexOfLinkInConnections(l, *conn);
+        if (indx>=0) {
+            linkr newLink;
+            if (indx==conn->linksCount-1) {
+                conn->linksList[indx]=newLink;
+                conn->linksCount--;
+            }else{
+                conn->linksList[indx]=conn->linksList[conn->linksCount-1];
+                conn->linksList[conn->linksCount-1]=newLink;
+                conn->linksCount--;
+            }
+            return 1;
+        }else{
+            return 0;
+        }
+        
+    }
+    return status;
+}
+
+
 void updateRoutingTable(connections conn){
 //    for (int x=0; x<conn.linksCount; x++) {
 //        linkr l = conn.linksList[x];
@@ -582,44 +704,28 @@ void chat(struct router destinationRouter, connections conn){
     }
 }
 
-int addLink(connections *conn, char linktxt[10]){
-    int status = 0;
-    if (linktxt==NULL) {
-        printf("\n\n=====[Inserir enlace]=====\nAdicione as informações do enlace no formato: origem-destino-custo:\n");
-        scanf("%9s",linktxt);
-    }
-    linkr l = linkFromChar(linktxt, '-');
-    if (indexOfLinkInConnections(l, *conn)<0) {
-        conn->linksList[conn->linksCount] = l;
-        conn->linksCount++;
-        return 1;
-    }else{
-        return 0;
-    }
-    return status;
-}
 
-
-int editLink(connections *conn, char linktxt[10]){
-    int status = 0;
-    printlink(*conn->linksList);
-    int indx=-1;
-    while (indx<0) {
-        printf("\n\n=====[Editar enlace]=====\nAdicione as informações do enlace à ser editado no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
-        scanf("%9s",linktxt);
-        linkr l = linkFromChar(linktxt, '-');
-        indx=indexOfLinkInConnections(l, *conn);
-        if (indx>=0) {
-            printf("\n\nInsira o novo custo para de %d para %d: ",l.from, l.to);
-            scanf("%d",&conn->linksList[indx].cost);
-            return 1;
-        }else{
-            return 0;
+void presentRoutingTable(connections conn){
+    printf("\n=====[TABELA DE ROTEAMENTO]=====\n\n   ");
+    for (int x=-2; x<conn.linksCount; x++) {
+        if (x==-2) {
+            for (int y=0; y<conn.routerCount; y++) {
+                printf(" %2d ",conn.routerList[y].id);
+            }
+            printf("\n");
+        }else if (x==-1) {
+            for (int y=0; y<conn.routerCount; y++) {
+                printf("----");
+            }
         }
-
+        else{
+            printf("\n%2d|",conn.routerList[x].id);
+            for (int y=0; y<conn.linksCount; y++) {
+                printf(" %2d ",conn.routingTable[x][y].cost);
+            }
+        }
+        
     }
-
-    return status;
 }
 
 void interface(connections *conn){
@@ -635,15 +741,24 @@ void interface(connections *conn){
                 printf("\n\n [ 1 ] Adicionar enlace\n [ 2 ] Editar enlace\n [ 3 ] Remover enlace \n Selecione um item (:menu para voltar):");
                 scanf("%9s",option);
                 if (strcmp(option, "1")==0) {
-                    if (addLink(conn, NULL)) {
+                    if (addLink(conn, "")) {
                         printf("\n\nEnlace adicionado!!\n\n");
                     }else{
                         printf("\n\nEnlace já existente!!\n\n");
                     }
+                    strcpy(option, ":menu");
                 }else if (strcmp(option, "2")==0) {
-                    
+                    editLink(conn, "");
+                    strcpy(option, ":menu");
                 }else if (strcmp(option, "3")==0) {
-                
+                    
+                    if(removeLink(conn, "")){
+                        printf("!!Enlace removido!!");
+                    }else{
+                        printf("!!Enlace não removido!!");
+                    }
+                    strcpy(option, ":menu");
+   
                 }else{
                     
                 }
@@ -651,9 +766,9 @@ void interface(connections *conn){
             }
             if (strcmp(option, "2")==0) {
                 println(5);
-                printf("\n\n=====[Tabela de roteamento]=====\n");
+                printf("\n\n=====[Lista de enlaces]=====\n");
                 printLinks(*conn);
-                printf("\n\n=====[Detalhamento dos nos encontrados]=====\n");
+                printf("\n\n=====[Detalhamento dos enlaces]=====\n");
                 printRouters(*conn);
                 router r;
 //                while (r.id<0) {
@@ -670,10 +785,14 @@ void interface(connections *conn){
                 new.status=PACKAGE_STATUS_READY;
                 addSendPackageToBuffer(new);
             }
+            if (strcmp(option, "4")==0) {
+                presentRoutingTable(*conn);
+            }
 //            if (strcmp(option, ":menu")==0) {
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
-            printf("[ 1 ] Ver tabela de roteamento\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n Selecione um item: ");
+            printf("[ 1 ] Ver tabela de roteamento\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
+            printf("[ 4 ] Tabela de roteamento\nSelecione um item: ");
 //            }
         
         scanf("%9s",option);

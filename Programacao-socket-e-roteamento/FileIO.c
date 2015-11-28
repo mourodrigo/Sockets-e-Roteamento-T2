@@ -171,13 +171,7 @@ connections readLinks(char filepath[],connections conn){
 #ifdef DEBUG_LEVEL_3
 //        printf("Read link %s",line);
 #endif
-        char** tokens;
-        linkr l;
-        tokens = str_split(line, ' ');
-
-        l.from = atoi(tokens[0]);
-        l.to = atoi(tokens[1]);
-        l.cost = atoi(tokens[2]);
+        linkr l = linkFromChar(line, ' ');
         l.isDirectlyConnected=1;
         if (l.to==conn.selfID) {
             l.to=l.from;
@@ -186,8 +180,12 @@ connections readLinks(char filepath[],connections conn){
         if (l.from==conn.selfID) {
             conn.linksList[indx]=l;
             indx++;
+            //conn.routingTable[l.from][l.to]=l;
+            //conn.routingTable[l.to][l.from]=l;
         }
+        
     }
+    
     fclose(fr);
     conn.linksCount = indx;
     return conn;
