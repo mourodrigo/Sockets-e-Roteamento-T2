@@ -679,7 +679,7 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
 void * sendLinksBroadcast(){
     int x=0;
     while (1) {
-        if (conn.linksList[x].isDirectlyConnected) {
+        if (conn.linksList[x].isDirectlyConnected==1) {
             Package p;
             p.localId = conn.selfID;
             p.destinationId = conn.linksList[x].to;
