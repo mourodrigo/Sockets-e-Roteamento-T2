@@ -127,8 +127,9 @@ int addLink(connections *conn, char linktxt[10]){
             sprintf(r.ip, "%d",l.from);
             r.port = -1;
             addRouter(conn, r);
-            l.isDirectlyConnected=0;
+
         }
+        l.isDirectlyConnected=0;
         conn->linksList[conn->linksCount] = l;
         conn->linksCount++;
         return 1;
@@ -316,7 +317,7 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
             //die("error sendto()");
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem para %s:%d",sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem para %d:%d",sendRequest.package.destinationId, sendRequest.port);
             return status;
         }else{
             status++;
@@ -437,9 +438,9 @@ void * startDownListen(void){ //listener to download data on thread
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
             
             //add to buffer
-            if (receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status==PACKAGE_STATUS_DONE) {
+            if (receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[1].status==PACKAGE_STATUS_DONE) {
                 receivingBufferIndex=1;
-            }else if(receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status!=PACKAGE_STATUS_DONE){
+            }else if(receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[1].status!=PACKAGE_STATUS_DONE){
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
