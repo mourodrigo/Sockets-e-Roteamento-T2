@@ -271,8 +271,10 @@ uploadSocket newSendRequestForPackage(Package p){
         
         if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
         {
-            die("socket");
-
+//            die("socket");
+            printf("SOCKET ERROR");
+            newRequest.requestId=-1;
+            break;
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
             
         }else{
@@ -471,8 +473,8 @@ void closeDown(downloadSocket down){
 #pragma mark - PACKAGE ROUTING
 //========================================
 
-int compareLink(linkr a,linkr b){
-    if (a.cost>b.cost) {
+int isBetterLink(linkr a,linkr b){
+    if (a.cost<b.cost) {
         return 1;
     }else{
         return 0;
@@ -484,11 +486,25 @@ void updateRoutingTableWithPackage(Package p){
     tokens = str_split(p.message, '|');
     int idx=0;
     while (tokens[idx]) {
+        char strLink[15];
+        strcpy(strLink, tokens[idx]);
         linkr l = linkFromChar(tokens[idx], '-');
-        (compareLink(l, conn.routingTable[l.from][l.to])) ? printf("Do nothing") :printf("Maior") ;
+        strcpy(tokens[idx],strLink);
+        
+        if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
+            isBetterLink(l, conn.routingTable[l.to][l.from])){
+            if (addLink(&conn, strLink)) {
+                printf("\n!!Novo enlace adicionado!! %s\n", tokens[idx]);
+            }
+            conn.routingTable[l.from][l.to]=l;
+            conn.routingTable[l.to][l.from]=l;            
+            printf("\n!!Atualizar tabela de roteamento!!\n");
+        }else{
+            printf("Do nothing");
+        }
         idx++;
     }
-    
+    //free(tokens);
     //criar o algoritmo de convergencia dos vetores de distancia
     
     
@@ -612,7 +628,9 @@ void * sendLinksBroadcast(){
             p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
             
             uploadSocket sendRequest = newSendRequestForPackage(p);
-            sendPackageWithRequest(sendRequest);
+            if (sendRequest.requestId>0) {
+                sendPackageWithRequest(sendRequest);
+            }
         }
         if (x==conn.linksCount-1) {
             sleep(10);
