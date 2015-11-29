@@ -199,6 +199,17 @@ int removeLink(connections *conn, char linktxt[10]){
     return status;
 }
 
+void prepareRoutingTable(connections *conn){
+    for (int x=0; x<MAX_LINKS; x++) {
+        for (int y=0; y<MAX_LINKS; y++) {
+            if (x==y) {
+                conn->routingTable[x][y].cost=0;
+            }else{
+                conn->routingTable[x][y].cost=99;
+            }
+        }
+    }
+}
 
 void updateRoutingTable(connections conn){
 //    for (int x=0; x<conn.linksCount; x++) {
@@ -422,12 +433,15 @@ void * startDownListen(void){ //listener to download data on thread
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
             
             //add to buffer
-            if (receivingBufferIndex==SENDING_BUFFER_SIZE) {
-                printf("BUFFER CHEIO!!!!!!!!!!!!!!!!");
-            }else{
-                receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
-                receivingBufferIndex++;
+            if (receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status==PACKAGE_STATUS_DONE) {
+                receivingBufferIndex=0;
+            }else if(receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status!=PACKAGE_STATUS_DONE){
+                printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
+                exit(0);
             }
+                receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
+                receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
+                receivingBufferIndex++;
             
             //now reply the client with the same data
             if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
@@ -457,7 +471,23 @@ void closeDown(downloadSocket down){
 #pragma mark - PACKAGE ROUTING
 //========================================
 
+int compareLink(linkr a,linkr b){
+    if (a.cost>b.cost) {
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
 void updateRoutingTableWithPackage(Package p){
+    char** tokens;
+    tokens = str_split(p.message, '|');
+    int idx=0;
+    while (tokens[idx]) {
+        linkr l = linkFromChar(tokens[idx], '-');
+        (compareLink(l, conn.routingTable[l.from][l.to])) ? printf("Do nothing") :printf("Maior") ;
+        idx++;
+    }
     
     //criar o algoritmo de convergencia dos vetores de distancia
     
@@ -465,28 +495,28 @@ void updateRoutingTableWithPackage(Package p){
 }
 
 void * routing(){
-    while (1) {
-        if (receivingBufferIndex>0) {
-            int indx = receivingBufferIndex;
-            while (indx) {
-                Package p = receivingBuffer[receivingBufferIndex];
-                switch (p.type) {
-                    case PACKAGE_TYPE_BROADCAST:
-                        updateRoutingTableWithPackage(p);
-                        break;
-                    case PACKAGE_TYPE_MESSAGE:
-                        
-                        break;
-                    default:
-//                        indx--;
+
+    for (int pid=0; ; pid++) {
+        
+        Package p = receivingBuffer[pid];
+        if (p.status==PACKAGE_STATUS_READY) {
+            switch (p.type) {
+                case PACKAGE_TYPE_BROADCAST:
+                    updateRoutingTableWithPackage(p);
+                    receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
                     break;
-                
+                case PACKAGE_TYPE_MESSAGE:
+                    
+                    break;
             }
-            }
-        }else{
-            sleep(1);
+        }
+        if (pid>=receivingBufferIndex-1) {
+            pid=0;
+            
         }
     }
+    
+    
 }
 
 
@@ -505,9 +535,9 @@ Package packageFromString(char *s){
     p.port = atoi(tokens[3]);
     p.ttl = atoi(tokens[4]);
     p.type = atoi(tokens[5]);
-    p.senderId = atoi(tokens[6]);
-    strcpy(p.senderIP, tokens[7]);
-    strcpy(p.message, tokens[8]);
+//    p.senderId = atoi(tokens[6]); //teletar
+    strcpy(p.senderIP, tokens[6]);
+    strcpy(p.message, tokens[7]);
     p.status = PACKAGE_STATUS_READY;
     
     return p;
@@ -517,14 +547,13 @@ Package packageFromString(char *s){
 char * stringFromPackage(Package p){
     char *str;
     char separator = '@';
-    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%d%c%s%c%s",
+    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
              p.localId,separator,
              p.destinationId,separator,
              p.destinationIP,separator,
              p.port,separator,
              p.ttl,separator,
              p.type,separator,
-             p.senderId,separator,
              p.senderIP,separator,
              p.message);
     
@@ -577,7 +606,6 @@ void * sendLinksBroadcast(){
             strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
             p.ttl=255;
             p.type=PACKAGE_TYPE_BROADCAST;
-            p.senderId=routerOfIndex(conn.linksList[x].to, conn.routerList).id;
             strcpy(p.senderIP, conn.routerList[x].ip);
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
@@ -693,7 +721,6 @@ void chat(struct router destinationRouter, connections conn){
         strcpy(p.destinationIP, destinationRouter.ip);
         p.ttl=255;
         p.type=PACKAGE_TYPE_MESSAGE;
-        p.senderId=conn.selfRouter.id;
         strcpy(p.senderIP, destinationRouter.ip);
         p.status=PACKAGE_STATUS_READY;
         strcpy(p.message, message);
@@ -832,13 +859,17 @@ int main(int argc, const char * argv[]) {
         conn.selfID = atoi(argv[1]);
 
         autoIncrementalLocalRequestId=0; //teletar?
+        sendingBufferIndex=receivingBufferIndex=0;
         
         stdOutDebugLevel = DEBUG_ALL;
+
+        prepareRoutingTable(&conn);
         
         //CONFIG FILE READING
         conn = readLinks(PATH_LINKS_FILE, conn);
         conn = readRouters(PATH_ROUTER_FILE, conn);
         addRouter(&conn, conn.selfRouter);
+        
         
         pthread_t flushSendBufferSingleton;
         pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);

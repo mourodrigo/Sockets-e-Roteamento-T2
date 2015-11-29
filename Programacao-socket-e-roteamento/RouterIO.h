@@ -36,7 +36,6 @@ typedef struct Package{
     char destinationIP[15];
     int ttl;
     int type;
-    int senderId;
     char senderIP[15];
     char message[MAX_USER_MSG_SIZE];
     int status;
