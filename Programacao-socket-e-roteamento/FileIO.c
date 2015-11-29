@@ -144,14 +144,37 @@ connections readRouters(char filepath[], connections conn){
 }
 
 linkr linkFromChar(char *text, char separator){
-    char** tokens;
-    linkr l;
-    tokens = str_split(text, separator);
+//    char** tokens;
+//    linkr l;
+//    tokens = str_split(text, separator);
+//    
+//    l.from = atoi(tokens[0]);
+//    l.to = atoi(tokens[1]);
+//    l.cost = atoi(tokens[2]);
+//    return l; //teletar?
     
-    l.from = atoi(tokens[0]);
-    l.to = atoi(tokens[1]);
-    l.cost = atoi(tokens[2]);
+    char *packageToken;
+    char *packagerest = text;
+    
+    linkr l;
+    int i=0;
+    while((packageToken = strtok_r(packagerest, &separator, &packagerest))){
+        switch (i) {
+            case 0:
+                l.from=atoi(packageToken);
+                break;
+            case 1:
+                l.to=atoi(packageToken);
+                break;
+            case 2:
+                l.cost=atoi(packageToken);
+                break;
+        }
+        i++;
+    }
+    
     return l;
+
 }
 
 connections readLinks(char filepath[],connections conn){

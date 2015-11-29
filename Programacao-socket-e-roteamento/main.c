@@ -482,27 +482,47 @@ int isBetterLink(linkr a,linkr b){
 }
 
 void updateRoutingTableWithPackage(Package p){
-    char** tokens;
-    tokens = str_split(p.message, '|');
-    int idx=0;
-    while (tokens[idx]) {
+    char *token;
+    char *rest = p.message;
+    
+    while((token = strtok_r(rest, "|", &rest)))
+    {
+        char *packageToken;
+        char *packagerest = token;
+        
         char strLink[15];
-        strcpy(strLink, tokens[idx]);
-        linkr l = linkFromChar(tokens[idx], '-');
-        strcpy(tokens[idx],strLink);
+        strcpy(strLink, token);
+
+        linkr l;
+        int i=0;
+        while((packageToken = strtok_r(packagerest, "-", &packagerest))){
+            switch (i) {
+                case 0:
+                    l.from=atoi(packageToken);
+                    break;
+                case 1:
+                    l.to=atoi(packageToken);
+                    break;
+                case 2:
+                    l.cost=atoi(packageToken);
+                    break;
+            }
+            i++;
+        }
         
         if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
-            isBetterLink(l, conn.routingTable[l.to][l.from])){
+            isBetterLink(l, conn.routingTable[l.to][l.from])&&
+            isBetterLink(l, conn.routingTable[conn.selfID][l.to])){
             if (addLink(&conn, strLink)) {
-                printf("\n!!Novo enlace adicionado!! %s\n", tokens[idx]);
+                printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+                conn.routingTable[l.from][l.to]=l;
+                conn.routingTable[l.to][l.from]=l;
+
             }
-            conn.routingTable[l.from][l.to]=l;
-            conn.routingTable[l.to][l.from]=l;            
             printf("\n!!Atualizar tabela de roteamento!!\n");
         }else{
             printf("Do nothing");
         }
-        idx++;
     }
     //free(tokens);
     //criar o algoritmo de convergencia dos vetores de distancia
@@ -539,22 +559,65 @@ void * routing(){
 
 Package packageFromString(char *s){
     
-    char separator = '@';
-    char** tokens;
-    tokens = str_split(s, separator);
+//    char separator = '@';
+//    char** tokens;
+//    tokens = str_split(s, separator);
+//    
+//    Package p;
+//    
+//    p.localId = atoi(tokens[0]);
+//    p.destinationId = atoi(tokens[1]);
+//    strcpy(p.destinationIP, tokens[2]);
+//    p.port = atoi(tokens[3]);
+//    p.ttl = atoi(tokens[4]);
+//    p.type = atoi(tokens[5]);
+////    p.senderId = atoi(tokens[6]); //teletar
+//    strcpy(p.senderIP, tokens[6]);
+//    strcpy(p.message, tokens[7]);
+//    p.status = PACKAGE_STATUS_READY;
+
+    
+    char *token;
+    char *rest = s;
     
     Package p;
-    
-    p.localId = atoi(tokens[0]);
-    p.destinationId = atoi(tokens[1]);
-    strcpy(p.destinationIP, tokens[2]);
-    p.port = atoi(tokens[3]);
-    p.ttl = atoi(tokens[4]);
-    p.type = atoi(tokens[5]);
-//    p.senderId = atoi(tokens[6]); //teletar
-    strcpy(p.senderIP, tokens[6]);
-    strcpy(p.message, tokens[7]);
+    int i=0;
+    while((token = strtok_r(rest, "@", &rest)))
+    {
+        
+        //    p.senderId = atoi(tokens[6]); //teletar
+
+        switch (i) {
+            case 0:
+                p.localId = atoi(token);
+                break;
+            case 1:
+                p.destinationId = atoi(token);
+                break;
+            case 2:
+                strcpy(p.destinationIP, token);
+                break;
+            case 3:
+                p.port = atoi(token);
+                break;
+            case 4:
+                p.ttl = atoi(token);
+                break;
+            case 5:
+                p.type = atoi(token);
+                break;
+            case 6:
+                strcpy(p.senderIP, token);
+                break;
+            case 7:
+                strcpy(p.message, token);
+                break;
+        }
+        i++;
+        
+    }
     p.status = PACKAGE_STATUS_READY;
+
     
     return p;
 }
