@@ -169,6 +169,9 @@ linkr linkFromChar(char *text, char separator){
             case 2:
                 l.cost=atoi(packageToken);
                 break;
+            case 3:
+                l.isDirectlyConnected=atoi(packageToken);
+                break;
         }
         i++;
     }

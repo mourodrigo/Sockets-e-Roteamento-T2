@@ -121,14 +121,16 @@ int addLink(connections *conn, char linktxt[10]){
         l = linkFromChar(linktxt, '-');
     }
     if (indexOfLinkInConnections(l, *conn)<0) {
-        conn->linksList[conn->linksCount] = l;
-        conn->linksCount++;
         if (routerOfIndex(l.to, conn->routerList).id<0) {
             router r;
             r.id = l.to;
             sprintf(r.ip, "%d",l.from);
             r.port = -1;
+            addRouter(conn, r);
+            l.isDirectlyConnected=0;
         }
+        conn->linksList[conn->linksCount] = l;
+        conn->linksCount++;
         return 1;
     }else{
         return 0;
@@ -314,7 +316,7 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
             //die("error sendto()");
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem %d para %s:%d",sendRequest.requestId,sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem para %s:%d",sendRequest.destination_IP, sendRequest.port);
             return status;
         }else{
             status++;
@@ -436,7 +438,7 @@ void * startDownListen(void){ //listener to download data on thread
             
             //add to buffer
             if (receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status==PACKAGE_STATUS_DONE) {
-                receivingBufferIndex=0;
+                receivingBufferIndex=1;
             }else if(receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[0].status!=PACKAGE_STATUS_DONE){
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
@@ -519,9 +521,8 @@ void updateRoutingTableWithPackage(Package p){
                 conn.routingTable[l.to][l.from]=l;
 
             }
-            printf("\n!!Atualizar tabela de roteamento!!\n");
         }else{
-            printf("Do nothing");
+         //   printf("Não houveram atualizações");
         }
     }
     //free(tokens);
@@ -666,7 +667,7 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
     char *str = "";
     int y=conn.linksCount-1;
     while (y>=0) {
-        if (l.to!=conn.linksList[y].to) {
+        if (l.to!=conn.linksList[y].from && l.to!=conn.linksList[y].to) {
             asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[y].from,conn.linksList[y].to,conn.linksList[y].cost+l.cost);
         }
         y--;
