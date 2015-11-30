@@ -339,9 +339,9 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         }else{
     #ifdef DEBUG_LEVEL_3
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n\n<=> Confirmação de recebimento: %s:%d",sendRequest.destination_IP, sendRequest.port);
+    #endif
             return ++status;
             break;
-    #endif
         }
     }
     return status;
@@ -449,7 +449,7 @@ void * startDownListen(void){ //listener to download data on thread
                 receivingBufferIndex++;
             
             //now reply the client with the same data
-            if (sendto(conn.downloadSocket.s, conn.downloadSocket.buf, conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
+            if (sendto(conn.downloadSocket.s, /*conn.downloadSocket.buf*/"=================se receber o mesmo pacote pode dar pau", conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
                 die("sendto()");
             }
@@ -765,7 +765,7 @@ int indexForBidirectionalLink(linkr l){
 
 Package routedPackage(Package p){
     linkr l = connectedLinkToDestinationId(p.localId, p.destinationId);
-    if (l.isDirectlyConnected==1&&(p.destinationId==l.to&&p.destinationId==l.from)) { //teletar
+    if (l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from)) { //teletar
 //        printf("Directly connected"); //teletar
         return p;
     }else{
