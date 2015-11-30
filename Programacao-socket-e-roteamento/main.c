@@ -532,6 +532,12 @@ void updateRoutingTableWithPackage(Package p){
     
 }
 
+void printPackage(Package p){
+    printf("\n<=============================\n| Mensagem recebida de %d: IP: %s  PORTA: %d ", p.localId,p.destinationIP,p.port);
+    printf("\n| Conteudo: %s \n<=============================\n", p.message);
+
+}
+
 void * routing(){
 
     for (int pid=0; ; pid++) {
@@ -544,7 +550,8 @@ void * routing(){
                     receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
                     break;
                 case PACKAGE_TYPE_MESSAGE:
-                    
+                    printPackage(p);
+                    receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
                     break;
             }
         }
@@ -709,6 +716,32 @@ void * sendLinksBroadcast(){
     return NULL;
 }
 
+linkr connectedLinkToDestinationId(int from, int to){
+    linkr shortestNext;
+    shortestNext.cost=999;
+    for (int r=0; r<conn.linksCount; r++) {
+        if ((conn.linksList[r].to==to||conn.linksList[r].from==to)&&conn.linksList[r].cost<shortestNext.cost) {
+            shortestNext=conn.linksList[r];
+        }
+    }
+    if (shortestNext.from==from) {
+        return shortestNext;
+    }else{
+        return connectedLinkToDestinationId(from, shortestNext.from);
+    }
+}
+
+Package routedPackage(Package p){
+    linkr l = connectedLinkToDestinationId(p.localId, p.destinationId);
+    if (p.destinationId==l.to) {
+//        printf("Directly connected"); //teletar
+        return p;
+    }else{
+        printf("Routed");
+    }
+    return p;
+}
+
 void * flushSendBuffer(){
     while (1) {
 //        sleep(1);
@@ -720,7 +753,7 @@ void * flushSendBuffer(){
             Package p = sendingBuffer[index];
             if (p.status==PACKAGE_STATUS_READY) {
                 sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
-                    uploadSocket sendRequest = newSendRequestForPackage(p);
+                    uploadSocket sendRequest = newSendRequestForPackage(routedPackage(p));
                     int status = sendPackageWithRequest(sendRequest);
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
