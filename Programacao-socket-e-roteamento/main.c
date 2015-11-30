@@ -339,9 +339,17 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         if (recvfrom(sendRequest.s, sendRequest.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &sendRequest.si_other, &sendRequest.slen) == -1)
         {
             //die("recvfrom()");
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK %s:%d",sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK para o pacote %s",messageString);
         }else{
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s:%d",   sendRequest.destination_IP, sendRequest.port);
+            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s",   sendRequest.buf);
+            
+            Package p = packageFromString(sendRequest.buf);
+            if (!(p.type==PACKAGE_TYPE_BROADCAST_ACK)) {
+                receivingBuffer[receivingBufferIndex]=p;
+                receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
+                receivingBufferIndex++;
+            }
+            
             return ++status;
             break;
         }
@@ -446,14 +454,17 @@ void * startDownListen(void){ //listener to download data on thread
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
-            
-            receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
-            receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
-            Package ackPackage = receivingBuffer[receivingBufferIndex];
+            Package received = packageFromString(conn.downloadSocket.buf);
+            received.status = PACKAGE_STATUS_READY;
+            if (receivingBufferIndex==SENDING_BUFFER_SIZE) {
+                receivingBufferIndex=1;
+            }
+            receivingBuffer[receivingBufferIndex]=received;
             receivingBufferIndex++;
-            ackPackage.type = PACKAGE_TYPE_ACK;
+
+            Package ackPkg = ackPackage(received);
             //now reply the client with the same data
-            if (sendto(conn.downloadSocket.s, stringFromPackage(ackPackage), conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
+            if (sendto(conn.downloadSocket.s, stringFromPackage(ackPkg), conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
                 die("sendto()");
             }
@@ -535,9 +546,18 @@ void updateRoutingTableWithPackage(Package p){
     
     
 }
+void setackPackage(Package p){
+    printf("\n<=============================\n| Mensagem %d com sucesso!! \n<=============================\n", p.packageId);
+    for (int x =0; x<receivingBufferIndex-1; x++) {
+        if (p.packageId==receivingBuffer[x].packageId) {
+            receivingBuffer[x].status = PACKAGE_STATUS_ACK;
+        }
+    }
+}
+
 void printForwardPackage(Package p){
-    printf("\n<====>\n| Mensagem recebida de %d: IP: %s  PORTA: %d ", p.localId,p.destinationIP,p.port);
-    printf("\n| Salva no buffer encaminhamento: %s \n<====>\n", p.message);
+    printf("\n<---------->\n| Pacote recebido de %d: IP: %s  PORTA: %d ", p.localId,p.destinationIP,p.port);
+    printf("\n| Salva no buffer encaminhamento: %s \n<---------->\n", p.message);
 
 }
 
@@ -568,8 +588,8 @@ void * routing(){
                     addSendPackageToBuffer(toRoute);
                     break;
                 case PACKAGE_TYPE_ACK:
-                    
-                    break;
+                    setackPackage(p);
+                break;
 
             }
             receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
@@ -584,6 +604,27 @@ void * routing(){
     
 }
 
+Package ackPackage(Package p){
+    
+    //inverte a direção do pacote
+    p.destinationId += p.localId;
+    p.localId = p.destinationId-p.localId;
+    p.destinationId = p.destinationId - p.localId;
+ 
+    router r = routerOfIndex(p.destinationId, conn.routerList);
+
+    strcpy(p.destinationIP, r.ip);
+    p.port = r.port;
+    if (p.type==PACKAGE_TYPE_BROADCAST) {
+        p.type=PACKAGE_TYPE_BROADCAST_ACK;
+    }else{
+        p.type = PACKAGE_TYPE_ACK;
+    }
+    strcpy(p.message, "");
+    p.status = PACKAGE_STATUS_READY;
+    
+    return p;
+}
 
 
 Package packageFromString(char *s){
@@ -882,8 +923,9 @@ void chat(struct router destinationRouter, connections conn){
     
     sleep(1);
     while (1) {
- 
-        printf("\n( :menu to exit) Your message: ");
+        int msgid=getRequestIdForPackage();
+        
+        printf("\n( :menu to exit) Insira o conteúdo da mensagem id %d para roteador id %d: ", msgid, destinationRouter.id);
         scanf("%s",message);
         if (strcmp(":menu", message)==0) {
             break;
@@ -892,7 +934,7 @@ void chat(struct router destinationRouter, connections conn){
         Package p;
         p.localId = conn.selfID;
         p.destinationId = destinationRouter.id;
-        p.packageId = getRequestIdForPackage();
+        p.packageId =msgid;
         strcpy(p.destinationIP, destinationRouter.ip);
         p.ttl=255;
         p.type=PACKAGE_TYPE_MESSAGE;
