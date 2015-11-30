@@ -101,7 +101,7 @@ int removeRouter(connections *conn, router r){
 
     if (indx<0) {
         printf("Nó nao encontrado");
-    }else if (indx>=0) {
+    }else if (indx>=0 && r.id!=conn->selfID) {
         router newRouter;
         if (indx==conn->routerCount-1) {
             conn->routerList[indx]=newRouter;
@@ -136,7 +136,6 @@ int addLink(connections *conn, char linktxt[10]){
             addRouter(conn, r);
 
         }
-        l.isDirectlyConnected=0;
         conn->linksList[conn->linksCount] = l;
         conn->linksCount++;
         return 1;
@@ -533,19 +532,40 @@ void updateRoutingTableWithPackage(Package p){
             }
             i++;
         }
-        
-        if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
+        router r = routerOfIndex(l.to, conn.routerList);
+        if (r.id<0 && l.from==conn.selfID) {
+            r.port = p.senderPort;
+            strcpy(r.ip, p.senderIP);
+            r.id = p.localId;
+            addRouter(&conn, r);
+            char *txt;
+            asprintf(&txt,"%d-%d-%d-%d",l.from,l.to,l.cost,1);
+            if (addLink(&conn, txt)) {
+                printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+                conn.routingTable[l.from][l.to]=l;
+                conn.routingTable[l.to][l.from]=l;
+                
+            }
+        }else if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
             isBetterLink(l, conn.routingTable[l.to][l.from])&&
             isBetterLink(l, conn.routingTable[conn.selfID][l.to])){
             if (addLink(&conn, strLink)) {
                 printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
                 conn.routingTable[l.from][l.to]=l;
                 conn.routingTable[l.to][l.from]=l;
-
+                
             }
-        }else{
-         //   printf("Não houveram atualizações");
+            
         }
+        
+            //        }else{
+//            for (int x=0; x<conn.routerCount; x++) {
+//                if (conn.routerList[x].id==r.id) {
+//                    strcpy(conn.routerList[x].ip, p.senderIP);
+//                    conn.routerList[x].port = p.senderPort;
+//                }
+//            }
+//        }
     }
     //free(tokens);
     //criar o algoritmo de convergencia dos vetores de distancia
@@ -576,9 +596,11 @@ void printMessagePackage(Package p){
 void * routing(){
 
     for (int pid=0; ; pid++) {
-        
+        if (pid>=receivingBufferIndex) {
+            pid=0;
+        }
         Package p = receivingBuffer[pid];
-        if (p.status==PACKAGE_STATUS_READY) {
+        if (p.status==PACKAGE_STATUS_READY||p.status==0) {
             p.status=PACKAGE_STATUS_PROCESSING;
             switch (p.type) {
                 case PACKAGE_TYPE_BROADCAST:
@@ -601,10 +623,7 @@ void * routing(){
             receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
 
         }
-        if (pid>=receivingBufferIndex-1) {
-            pid=0;
-            
-        }
+        
     }
     
     
@@ -686,16 +705,19 @@ Package packageFromString(char *s){
                 p.type = atoi(token);
                 break;
             case 7:
+                p.senderPort = atoi(token);
+                break;
+            case 8:
                 strcpy(p.senderIP, token);
                 if (p.type==PACKAGE_TYPE_FORWARD) {
                     strcpy(p.message, rest);
                 }
                 break;
-            case 8:
+            case 9:
                 strcpy(p.message, token);
                 break;
         }
-        if (i==7 && p.type==PACKAGE_TYPE_FORWARD) break;
+        if (i==8 && p.type==PACKAGE_TYPE_FORWARD) break;
         i++;
         
     }
@@ -709,7 +731,7 @@ Package packageFromString(char *s){
 char * stringFromPackage(Package p){
     char *str;
     char separator = '@';
-    asprintf(&str, "%d%c%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
+    asprintf(&str, "%d%c%d%c%d%c%s%c%d%c%d%c%d%c%d%c%s%c%s",
              p.localId,separator,
              p.destinationId,separator,
              p.packageId,separator,
@@ -717,6 +739,7 @@ char * stringFromPackage(Package p){
              p.port,separator,
              p.ttl,separator,
              p.type,separator,
+             p.senderPort,separator,
              p.senderIP,separator,
              p.message);
     
@@ -772,7 +795,8 @@ void * sendLinksBroadcast(){
             strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
             p.ttl=MAX_TTL_BROADCAST;
             p.type=PACKAGE_TYPE_BROADCAST;
-            strcpy(p.senderIP, conn.routerList[x].ip);
+            p.senderPort=conn.selfRouter.port;
+            strcpy(p.senderIP, conn.selfRouter.ip);
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
             p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
@@ -850,6 +874,7 @@ Package routedPackage(Package p){
             strcpy(routedPackage.destinationIP, r.ip);
             routedPackage.ttl=MAX_TTL;
             routedPackage.type=PACKAGE_TYPE_FORWARD;
+            routedPackage.senderPort=conn.selfRouter.port;
             strcpy(routedPackage.senderIP, conn.selfRouter.ip);
             strcpy(routedPackage.message, stringFromPackage(p));
             routedPackage.port = r.port;
@@ -867,15 +892,6 @@ void * flushSendBuffer(){
             if (index>sendingBufferIndex) {
                 index=0;
             }
-            if (sendingBuffer[index].status==PACKAGE_STATUS_SENT) {
-                sendingBuffer[index].status=PACKAGE_STATUS_READY;
-                sendingBuffer[index].ttl--;
-            }
-            if (sendingBuffer[index].ttl<0 && (sendingBuffer[index].status==PACKAGE_STATUS_READY || sendingBuffer[index].status==PACKAGE_STATUS_SENT)) {
-                sendingBuffer[index].status=PACKAGE_STATUS_DEAD;
-                printf("!! NAO É POSSIVEL ENVIAR PARA ESTE DESTINO %s",stringFromPackage(sendingBuffer[index]));
-                removeAllId(sendingBuffer[index].destinationId);
-            }
             Package p = sendingBuffer[index];
 
             if (p.status==PACKAGE_STATUS_READY) {
@@ -890,12 +906,20 @@ void * flushSendBuffer(){
                 }
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
+                        
                         printf("!! ERRO AO ENVIAR PACOTE %s",stringFromPackage(sendRequest.package));
-                        exit(0);
+                     //   exit(0);
                         break;
                     case REQUEST_STATUS_SEND_NO_ANSWER:
                         sendingBuffer[index].ttl--;
-                        sendingBuffer[index].status= PACKAGE_STATUS_READY;
+                        if (sendingBuffer[index].ttl<=0) {
+                            sendingBuffer[index].status= PACKAGE_STATUS_DEAD;
+                            printf("\n!!-!! NAO É POSSIVEL ENVIAR PARA ESTE DESTINO %s",stringFromPackage(sendingBuffer[index]));
+                            removeAllId(sendingBuffer[index].destinationId);
+                        }else if (sendingBuffer[index].status!=PACKAGE_STATUS_DEAD) {
+                                sendingBuffer[index].status=PACKAGE_STATUS_READY;
+                                sendingBuffer[index].ttl--;
+                        }
                         break;
                     case REQUEST_STATUS_OK:
                         sendingBuffer[index].status= PACKAGE_STATUS_SENT;
@@ -974,7 +998,8 @@ void chat(struct router destinationRouter, connections conn){
         strcpy(p.destinationIP, destinationRouter.ip);
         p.ttl=MAX_TTL;
         p.type=PACKAGE_TYPE_MESSAGE;
-        strcpy(p.senderIP, destinationRouter.ip);
+        strcpy(p.senderIP, conn.selfRouter.ip);
+        p.senderPort  = conn.selfRouter.port;
         p.status=PACKAGE_STATUS_READY;
         strcpy(p.message, message);
         p.port = destinationRouter.port;

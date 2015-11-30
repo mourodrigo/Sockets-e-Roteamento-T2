@@ -41,6 +41,7 @@ typedef struct Package{
     int status;
     int port;
     int packageId;
+    int senderPort;
 }Package;
 
 

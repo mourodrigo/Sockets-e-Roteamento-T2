@@ -163,6 +163,7 @@ linkr linkFromChar(char *text, char *separator){
     char *packagerest = text;
     
     linkr l;
+    l.from=l.cost=l.to=l.isDirectlyConnected=0;
     int i=0;
     while((packageToken = strtok_r(packagerest, separator, &packagerest))){
         switch (i) {
