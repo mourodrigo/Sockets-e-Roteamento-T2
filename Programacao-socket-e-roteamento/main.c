@@ -559,6 +559,7 @@ void * routing(){
                     break;
                 case PACKAGE_TYPE_FORWARD:
                     printForwardPackage(p);
+                    addSendPackageToBuffer(packageFromString(p.message));
                     break;
 
             }
@@ -627,11 +628,15 @@ Package packageFromString(char *s){
                 break;
             case 6:
                 strcpy(p.senderIP, token);
+                if (p.type==PACKAGE_TYPE_FORWARD) {
+                    strcpy(p.message, rest);
+                }
                 break;
             case 7:
                 strcpy(p.message, token);
                 break;
         }
+        if (i==6 && p.type==PACKAGE_TYPE_FORWARD) break;
         i++;
         
     }
@@ -734,20 +739,37 @@ linkr connectedLinkToDestinationId(int from, int to){
             shortestNext=conn.linksList[r];
         }
     }
-    if (shortestNext.from==from) {
+    if (/*shortestNext.from==from||shortestNext.to==to*/shortestNext.isDirectlyConnected) {
         return shortestNext;
     }else{
         return connectedLinkToDestinationId(from, shortestNext.from);
     }
 }
 
+int indexForBidirectionalLink(linkr l){
+    router r1 = routerOfIndex(l.from, conn.routerList);
+    router r2 = routerOfIndex(l.to, conn.routerList);
+    if (r1.port>0 && r2.port<0) {
+        return r1.id;
+    }else if (r2.port>0 && r1.port<0){
+        return r2.id;
+    }else if(r1.id!=conn.selfID && r2.id==conn.selfID){
+        return r1.id;
+    }else if(r2.id!=conn.selfID && r1.id==conn.selfID){
+        return r2.id;
+    }else{
+        printf("ERRO - INCONSISTENCIA DE LINKS");
+        exit(1);
+    }
+}
+
 Package routedPackage(Package p){
     linkr l = connectedLinkToDestinationId(p.localId, p.destinationId);
-    if (p.destinationId==l.to) {
+    if (l.isDirectlyConnected==1&&(p.destinationId==l.to&&p.destinationId==l.from)) { //teletar
 //        printf("Directly connected"); //teletar
         return p;
     }else{
-        router r = routerOfIndex(l.to, conn.routerList);
+        router r = routerOfIndex(indexForBidirectionalLink(l), conn.routerList);
         Package routedPackage;
         routedPackage.localId = conn.selfID ;
         routedPackage.destinationId = l.to;
