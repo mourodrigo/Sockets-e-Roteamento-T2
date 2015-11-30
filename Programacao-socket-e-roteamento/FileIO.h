@@ -23,5 +23,5 @@ char * replace(
                char const * const pattern,
                char const * const replacement
                );
-linkr linkFromChar(char *text, char separator);
+linkr linkFromChar(char *text, char *separator);
 #endif /* defined(____FileIO__) */

@@ -143,7 +143,7 @@ connections readRouters(char filepath[], connections conn){
     return conn;
 }
 
-linkr linkFromChar(char *text, char separator){
+linkr linkFromChar(char *text, char *separator){
 //    char** tokens;
 //    linkr l;
 //    tokens = str_split(text, separator);
@@ -158,7 +158,7 @@ linkr linkFromChar(char *text, char separator){
     
     linkr l;
     int i=0;
-    while((packageToken = strtok_r(packagerest, &separator, &packagerest))){
+    while((packageToken = strtok_r(packagerest, separator, &packagerest))){
         switch (i) {
             case 0:
                 l.from=atoi(packageToken);
@@ -197,7 +197,7 @@ connections readLinks(char filepath[],connections conn){
 #ifdef DEBUG_LEVEL_3
 //        printf("Read link %s",line);
 #endif
-        linkr l = linkFromChar(line, ' ');
+        linkr l = linkFromChar(line, " ");
         l.isDirectlyConnected=1;
         if (l.to==conn.selfID) {
             l.to=l.from;

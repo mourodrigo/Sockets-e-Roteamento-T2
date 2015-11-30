@@ -116,9 +116,9 @@ int addLink(connections *conn, char linktxt[10]){
         printf("\n\n=====[Inserir enlace]=====\nAdicione as informações do enlace no formato: origem-destino-custo:\n");
         char linktxta[10];
         scanf("%s",linktxta);
-        l = linkFromChar(linktxta, '-');
+        l = linkFromChar(linktxta, "-");
     }else{
-        l = linkFromChar(linktxt, '-');
+        l = linkFromChar(linktxt, "-");
     }
     if (indexOfLinkInConnections(l, *conn)<0) {
         if (routerOfIndex(l.to, conn->routerList).id<0) {
@@ -150,9 +150,9 @@ int editLink(connections *conn, char linktxt[10]){
             printf("Adicione as informações do enlace à ser editado no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
             char linktxta[10];
             scanf("%s",linktxta);
-            l = linkFromChar(linktxta, '-');
+            l = linkFromChar(linktxta, "-");
         }else{
-            l = linkFromChar(linktxt, '-');
+            l = linkFromChar(linktxt, "-");
         }
         indx=indexOfLinkInConnections(l, *conn);
         if (indx>=0) {
@@ -178,9 +178,9 @@ int removeLink(connections *conn, char linktxt[10]){
             printf("Adicione as informações do ENLACE à ser REMOVIDO no formato: origem-destino-custo:\n(:menu para sair) Enlace: ");
             char linktxta[10];
             scanf("%s",linktxta);
-            l = linkFromChar(linktxta, '-');
+            l = linkFromChar(linktxta, "-");
         }else{
-            l = linkFromChar(linktxt, '-');
+            l = linkFromChar(linktxt, "-");
         }
         indx=indexOfLinkInConnections(l, *conn);
         if (indx>=0) {
@@ -531,8 +531,13 @@ void updateRoutingTableWithPackage(Package p){
     
     
 }
+void printForwardPackage(Package p){
+    printf("\n<====>\n| Mensagem recebida de %d: IP: %s  PORTA: %d ", p.localId,p.destinationIP,p.port);
+    printf("\n| Salva no buffer encaminhamento: %s \n<====>\n", p.message);
 
-void printPackage(Package p){
+}
+
+void printMessagePackage(Package p){
     printf("\n<=============================\n| Mensagem recebida de %d: IP: %s  PORTA: %d ", p.localId,p.destinationIP,p.port);
     printf("\n| Conteudo: %s \n<=============================\n", p.message);
 
@@ -544,16 +549,21 @@ void * routing(){
         
         Package p = receivingBuffer[pid];
         if (p.status==PACKAGE_STATUS_READY) {
+            p.status=PACKAGE_STATUS_PROCESSING;
             switch (p.type) {
                 case PACKAGE_TYPE_BROADCAST:
                     updateRoutingTableWithPackage(p);
-                    receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
                     break;
                 case PACKAGE_TYPE_MESSAGE:
-                    printPackage(p);
-                    receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
+                    printMessagePackage(p);
                     break;
+                case PACKAGE_TYPE_FORWARD:
+                    printForwardPackage(p);
+                    break;
+
             }
+            receivingBuffer[pid].status=PACKAGE_STATUS_DONE;
+
         }
         if (pid>=receivingBufferIndex-1) {
             pid=0;
@@ -737,9 +747,20 @@ Package routedPackage(Package p){
 //        printf("Directly connected"); //teletar
         return p;
     }else{
-        printf("Routed");
+        router r = routerOfIndex(l.to, conn.routerList);
+        Package routedPackage;
+        routedPackage.localId = conn.selfID ;
+        routedPackage.destinationId = l.to;
+        strcpy(routedPackage.destinationIP, r.ip);
+        routedPackage.ttl=255;
+        routedPackage.type=PACKAGE_TYPE_FORWARD;
+        strcpy(routedPackage.senderIP, conn.selfRouter.ip);
+        routedPackage.status=PACKAGE_STATUS_READY;
+        strcpy(routedPackage.message, stringFromPackage(p));
+        routedPackage.port = r.port;
+        
+        return routedPackage;
     }
-    return p;
 }
 
 void * flushSendBuffer(){
@@ -843,6 +864,7 @@ void chat(struct router destinationRouter, connections conn){
         p.port = destinationRouter.port;
         addSendPackageToBuffer(p);
 
+        
         
     }
 }
