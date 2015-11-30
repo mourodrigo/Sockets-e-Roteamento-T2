@@ -764,7 +764,7 @@ void * sendLinksBroadcast(){
             p.destinationId = conn.linksList[x].to;
             p.packageId = getRequestIdForPackage();
             strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
-            p.ttl=255;
+            p.ttl=MAX_TTL;
             p.type=PACKAGE_TYPE_BROADCAST;
             strcpy(p.senderIP, conn.routerList[x].ip);
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
@@ -832,7 +832,7 @@ Package routedPackage(Package p){
         routedPackage.destinationId = l.to;
         routedPackage.packageId = getRequestIdForPackage();
         strcpy(routedPackage.destinationIP, r.ip);
-        routedPackage.ttl=255;
+        routedPackage.ttl=MAX_TTL;
         routedPackage.type=PACKAGE_TYPE_FORWARD;
         strcpy(routedPackage.senderIP, conn.selfRouter.ip);
         routedPackage.status=PACKAGE_STATUS_READY;
@@ -855,8 +855,10 @@ void * flushSendBuffer(){
                 sendingBuffer[index].status=PACKAGE_STATUS_READY;
                 sendingBuffer[index].ttl--;
             }
-            if (sendingBuffer[index].ttl<0) {
+            if (sendingBuffer[index].ttl<0 && (sendingBuffer[index].status==PACKAGE_STATUS_READY || sendingBuffer[index].status==PACKAGE_STATUS_SENT)) {
                 sendingBuffer[index].status=PACKAGE_STATUS_DEAD;
+                printf("!! NAO É POSSIVEL ENVIAR PARA ESTE DESTINO %s",stringFromPackage(sendingBuffer[index]));
+                removeAllId(sendingBuffer[index].destinationId);
             }
             Package p = sendingBuffer[index];
 
@@ -866,10 +868,12 @@ void * flushSendBuffer(){
                     int status = sendPackageWithRequest(sendRequest);
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
-                        
+                        printf("!! ERRO AO ENVIAR PACOTE %s",stringFromPackage(sendRequest.package));
+                        exit(0);
                         break;
                     case REQUEST_STATUS_SEND_NO_ANSWER:
-                        
+                        sendingBuffer[index].ttl--;
+                        sendingBuffer[index].status= PACKAGE_STATUS_READY;
                         break;
                     case REQUEST_STATUS_OK:
                         sendingBuffer[index].status= PACKAGE_STATUS_SENT;
@@ -946,7 +950,7 @@ void chat(struct router destinationRouter, connections conn){
         p.destinationId = destinationRouter.id;
         p.packageId =msgid;
         strcpy(p.destinationIP, destinationRouter.ip);
-        p.ttl=255;
+        p.ttl=MAX_TTL;
         p.type=PACKAGE_TYPE_MESSAGE;
         strcpy(p.senderIP, destinationRouter.ip);
         p.status=PACKAGE_STATUS_READY;
@@ -959,6 +963,20 @@ void chat(struct router destinationRouter, connections conn){
     }
 }
 
+void removeAllId(int idx){
+    for (int x=0; x<conn.routerCount; x++) {
+        if (conn.routerList[x].id==idx) {
+            removeRouter(&conn, conn.routerList[x]);
+        }
+    }
+    for (int x=0; x<conn.linksCount; x++) {
+        if (conn.linksList[x].to==idx || conn.linksList[x].from==idx) {
+            char *linktxt;
+            asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
+            removeLink(&conn, linktxt);
+        }
+    }
+}
 
 void presentRoutingTable(connections conn){
     printf("\n=====[TABELA DE ROTEAMENTO]=====\n\n   ");

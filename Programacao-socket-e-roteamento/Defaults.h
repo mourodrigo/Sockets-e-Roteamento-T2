@@ -34,7 +34,7 @@
 
 //ROUTING CONFIGS
 #define SEND_TRIES 2
-
+#define MAX_TTL 15
 //DEBUG
 #define DEBUG_ERROR_ONLY 1
 #define DEBUG_WARNING 2

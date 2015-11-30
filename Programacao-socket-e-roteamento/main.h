@@ -28,6 +28,6 @@ downloadSocket initDownClient(downloadSocket down);
 uploadSocket upRequest(router destination, char message[MAX_USER_MSG_SIZE]);
 Package packageFromString(char *s);
 void printLinks(connections conn);
-
+void removeAllId(int idx);
 Package ackPackage(Package p);
 #endif
