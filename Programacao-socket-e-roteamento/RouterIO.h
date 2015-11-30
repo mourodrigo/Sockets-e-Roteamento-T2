@@ -40,6 +40,7 @@ typedef struct Package{
     char message[MAX_USER_MSG_SIZE];
     int status;
     int port;
+    int packageId;
 }Package;
 
 

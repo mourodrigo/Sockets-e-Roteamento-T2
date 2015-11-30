@@ -13,11 +13,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include "limits.h"
 
 //CONFIG FILE
-#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
@@ -60,6 +60,7 @@
 #define PACKAGE_TYPE_BROADCAST 255
 #define PACKAGE_TYPE_MESSAGE 111
 #define PACKAGE_TYPE_FORWARD 222
+#define PACKAGE_TYPE_ACK 333
 
 #define PACKAGE_STATUS_READY 1
 #define PACKAGE_STATUS_SENDING 2

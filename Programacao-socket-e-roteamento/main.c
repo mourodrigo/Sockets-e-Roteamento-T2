@@ -29,6 +29,13 @@ void die(char *s)
     exit(1);
 }
 
+int getRequestIdForPackage(){
+    if (autoIncrementalLocalRequestId==INT_MAX-1000) {
+        autoIncrementalLocalRequestId=0;
+    }
+    return autoIncrementalLocalRequestId++;
+}
+
 router routerOfIndex(int indx, router r[conn.routerCount]){ //teletar?
     for (int x=0; x<conn.routerCount; x++) {
         if (r[x].id==indx) {
@@ -331,15 +338,10 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         //try to receive some data, this is a blocking call
         if (recvfrom(sendRequest.s, sendRequest.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &sendRequest.si_other, &sendRequest.slen) == -1)
         {
-    #ifdef DEBUG_LEVEL_3
             //die("recvfrom()");
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK %s:%d",sendRequest.destination_IP, sendRequest.port);
-            
-    #endif
         }else{
-    #ifdef DEBUG_LEVEL_3
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n\n<=> Confirmação de recebimento: %s:%d",sendRequest.destination_IP, sendRequest.port);
-    #endif
+            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s:%d",   sendRequest.destination_IP, sendRequest.port);
             return ++status;
             break;
         }
@@ -444,12 +446,14 @@ void * startDownListen(void){ //listener to download data on thread
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
-                receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
-                receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
-                receivingBufferIndex++;
             
+            receivingBuffer[receivingBufferIndex]=packageFromString(conn.downloadSocket.buf);
+            receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
+            Package ackPackage = receivingBuffer[receivingBufferIndex];
+            receivingBufferIndex++;
+            ackPackage.type = PACKAGE_TYPE_ACK;
             //now reply the client with the same data
-            if (sendto(conn.downloadSocket.s, /*conn.downloadSocket.buf*/"=================se receber o mesmo pacote pode dar pau", conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
+            if (sendto(conn.downloadSocket.s, stringFromPackage(ackPackage), conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
                 die("sendto()");
             }
@@ -559,7 +563,12 @@ void * routing(){
                     break;
                 case PACKAGE_TYPE_FORWARD:
                     printForwardPackage(p);
-                    addSendPackageToBuffer(packageFromString(p.message));
+                    Package toRoute = packageFromString(p.message);
+                    toRoute.packageId = getRequestIdForPackage();
+                    addSendPackageToBuffer(toRoute);
+                    break;
+                case PACKAGE_TYPE_ACK:
+                    
                     break;
 
             }
@@ -615,28 +624,31 @@ Package packageFromString(char *s){
                 p.destinationId = atoi(token);
                 break;
             case 2:
-                strcpy(p.destinationIP, token);
+                p.packageId = atoi(token);
                 break;
             case 3:
-                p.port = atoi(token);
+                strcpy(p.destinationIP, token);
                 break;
             case 4:
-                p.ttl = atoi(token);
+                p.port = atoi(token);
                 break;
             case 5:
-                p.type = atoi(token);
+                p.ttl = atoi(token);
                 break;
             case 6:
+                p.type = atoi(token);
+                break;
+            case 7:
                 strcpy(p.senderIP, token);
                 if (p.type==PACKAGE_TYPE_FORWARD) {
                     strcpy(p.message, rest);
                 }
                 break;
-            case 7:
+            case 8:
                 strcpy(p.message, token);
                 break;
         }
-        if (i==6 && p.type==PACKAGE_TYPE_FORWARD) break;
+        if (i==7 && p.type==PACKAGE_TYPE_FORWARD) break;
         i++;
         
     }
@@ -650,9 +662,10 @@ Package packageFromString(char *s){
 char * stringFromPackage(Package p){
     char *str;
     char separator = '@';
-    asprintf(&str, "%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
+    asprintf(&str, "%d%c%d%c%d%c%s%c%d%c%d%c%d%c%s%c%s",
              p.localId,separator,
              p.destinationId,separator,
+             p.packageId,separator,
              p.destinationIP,separator,
              p.port,separator,
              p.ttl,separator,
@@ -706,6 +719,7 @@ void * sendLinksBroadcast(){
             Package p;
             p.localId = conn.selfID;
             p.destinationId = conn.linksList[x].to;
+            p.packageId = getRequestIdForPackage();
             strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
             p.ttl=255;
             p.type=PACKAGE_TYPE_BROADCAST;
@@ -773,6 +787,7 @@ Package routedPackage(Package p){
         Package routedPackage;
         routedPackage.localId = conn.selfID ;
         routedPackage.destinationId = l.to;
+        routedPackage.packageId = getRequestIdForPackage();
         strcpy(routedPackage.destinationIP, r.ip);
         routedPackage.ttl=255;
         routedPackage.type=PACKAGE_TYPE_FORWARD;
@@ -877,6 +892,7 @@ void chat(struct router destinationRouter, connections conn){
         Package p;
         p.localId = conn.selfID;
         p.destinationId = destinationRouter.id;
+        p.packageId = getRequestIdForPackage();
         strcpy(p.destinationIP, destinationRouter.ip);
         p.ttl=255;
         p.type=PACKAGE_TYPE_MESSAGE;

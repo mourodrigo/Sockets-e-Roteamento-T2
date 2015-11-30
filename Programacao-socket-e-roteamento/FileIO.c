@@ -112,6 +112,12 @@ connections readRouters(char filepath[], connections conn){
     
     fr = fopen (filepath, "r");
     
+    if (!fr) {
+        printf("\n\nARQUIVO DE CONFIGURAÇÃO DE ROTEADORES NÃO ENCONTRADO. DEFINA O CAMINHO EM : Default.h \n\n");
+        exit(0);
+    }
+
+    
     int indx = 0;
     while(fgets(line, 240, fr) != NULL)
     {
@@ -190,6 +196,11 @@ connections readLinks(char filepath[],connections conn){
 #endif
     
     fr = fopen (filepath, "r");
+    
+    if (!fr) {
+        printf("\n\nARQUIVO DE CONFIGURAÇÃO DE ENLACES NÃO ENCONTRADO. DEFINA O CAMINHO EM : Default.h \n\n");
+        exit(0);
+    }
     
     int indx = 0;
     while(fgets(line, 240, fr) != NULL)
