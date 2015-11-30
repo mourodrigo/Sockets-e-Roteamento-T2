@@ -13,8 +13,8 @@
 //======================================================
 #pragma mark - ROUTING MANAGE
 //======================================================
-Package sendingBuffer[SENDING_BUFFER_SIZE];
-Package receivingBuffer[SENDING_BUFFER_SIZE];
+Package sendingBuffer[ROUTING_BUFFER_SIZE];
+Package receivingBuffer[ROUTING_BUFFER_SIZE];
 int sendingBufferIndex, receivingBufferIndex;
 
 struct connections conn;
@@ -319,7 +319,6 @@ int sendPackageWithRequest(uploadSocket sendRequest){
     
     while (sendTries--) {
         
-
         status = 0;
         if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
@@ -367,6 +366,9 @@ void closeUp(uploadSocket up){
 void addSendPackageToBuffer(Package p){
     sendingBuffer[sendingBufferIndex] = p;
     sendingBufferIndex++;
+    if (sendingBufferIndex==ROUTING_BUFFER_SIZE) {
+        sendingBufferIndex=0;
+    }
 }
 
 
@@ -448,15 +450,15 @@ void * startDownListen(void){ //listener to download data on thread
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
             
             //add to buffer
-            if (receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[1].status==PACKAGE_STATUS_DONE) {
+            if (receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status==PACKAGE_STATUS_DONE) {
                 receivingBufferIndex=1;
-            }else if(receivingBufferIndex==SENDING_BUFFER_SIZE && receivingBuffer[1].status!=PACKAGE_STATUS_DONE){
+            }else if(receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status!=PACKAGE_STATUS_DONE){
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
             Package received = packageFromString(conn.downloadSocket.buf);
             received.status = PACKAGE_STATUS_READY;
-            if (receivingBufferIndex==SENDING_BUFFER_SIZE) {
+            if (receivingBufferIndex==ROUTING_BUFFER_SIZE) {
                 receivingBufferIndex=1;
             }
             receivingBuffer[receivingBufferIndex]=received;
@@ -849,7 +851,15 @@ void * flushSendBuffer(){
             if (index>sendingBufferIndex) {
                 index=0;
             }
+            if (sendingBuffer[index].status==PACKAGE_STATUS_SENT) {
+                sendingBuffer[index].status=PACKAGE_STATUS_READY;
+                sendingBuffer[index].ttl--;
+            }
+            if (sendingBuffer[index].ttl<0) {
+                sendingBuffer[index].status=PACKAGE_STATUS_DEAD;
+            }
             Package p = sendingBuffer[index];
+
             if (p.status==PACKAGE_STATUS_READY) {
                 sendingBuffer[index].status = PACKAGE_STATUS_SENDING;
                     uploadSocket sendRequest = newSendRequestForPackage(routedPackage(p));
