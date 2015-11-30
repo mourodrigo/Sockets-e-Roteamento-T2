@@ -30,4 +30,5 @@ Package packageFromString(char *s);
 void printLinks(connections conn);
 void removeAllId(int idx);
 Package ackPackage(Package p);
+void closeUp(uploadSocket up);
 #endif

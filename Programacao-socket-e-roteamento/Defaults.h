@@ -33,7 +33,7 @@
 #define MAX_HEADER_SIZE 256
 
 //ROUTING CONFIGS
-#define SEND_TRIES 15
+#define SEND_TRIES 1
 #define MAX_TTL 15
 #define MAX_TTL_BROADCAST 2
 

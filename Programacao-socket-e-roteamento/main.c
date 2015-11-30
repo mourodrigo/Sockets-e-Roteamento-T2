@@ -342,6 +342,8 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         {
             //die("recvfrom()");
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK para o pacote %s",messageString);
+            closeUp(sendRequest);
+
         }else{
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s",   sendRequest.buf);
             
@@ -351,7 +353,7 @@ int sendPackageWithRequest(uploadSocket sendRequest){
                 receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
                 receivingBufferIndex++;
             }
-            
+            closeUp(sendRequest);
             return ++status;
             break;
         }
@@ -546,7 +548,8 @@ void updateRoutingTableWithPackage(Package p){
                 conn.routingTable[l.to][l.from]=l;
                 
             }
-        }else if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
+        }
+        if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
             isBetterLink(l, conn.routingTable[l.to][l.from])&&
             isBetterLink(l, conn.routingTable[conn.selfID][l.to])){
             if (addLink(&conn, strLink)) {
@@ -856,28 +859,34 @@ int indexForBidirectionalLink(linkr l){
 }
 
 Package routedPackage(Package p){
+    if (p.type==PACKAGE_TYPE_BROADCAST) {
+        return p;
+    }
+    
     linkr l = connectedLinkToDestinationId(p.localId, p.destinationId);
-    if (l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from)) { //teletar
+    if ((l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from))) { //teletar
 //        printf("Directly connected"); //teletar
         return p;
     }else{
         router r = routerOfIndex(indexForBidirectionalLink(l), conn.routerList);
         Package routedPackage;
         
-        if (r.id<0) {
+        if (r.id<0 && strlen(r.ip)==0) {
             routedPackage.status=PACKAGE_STATUS_DEAD;
-        }else{
+            return routedPackage;
+        }else if(p.type==PACKAGE_TYPE_MESSAGE){
             routedPackage.status=PACKAGE_STATUS_READY;
             routedPackage.localId = conn.selfID ;
             routedPackage.destinationId = l.to;
             routedPackage.packageId = getRequestIdForPackage();
             strcpy(routedPackage.destinationIP, r.ip);
-            routedPackage.ttl=MAX_TTL;
+            routedPackage.ttl=p.ttl--;
             routedPackage.type=PACKAGE_TYPE_FORWARD;
             routedPackage.senderPort=conn.selfRouter.port;
             strcpy(routedPackage.senderIP, conn.selfRouter.ip);
             strcpy(routedPackage.message, stringFromPackage(p));
             routedPackage.port = r.port;
+        
         }
         
         return routedPackage;
@@ -925,6 +934,7 @@ void * flushSendBuffer(){
                         sendingBuffer[index].status= PACKAGE_STATUS_SENT;
                         break;
                 }
+
             }
         }
     }
@@ -1012,10 +1022,15 @@ void chat(struct router destinationRouter, connections conn){
 
 void removeAllId(int idx){
     for (int x=0; x<conn.linksCount; x++) {
-        if (conn.linksList[x].to==idx || conn.linksList[x].from==idx) {
+        if (conn.linksList[x].to==idx) {
             char *linktxt;
             asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
             removeLink(&conn, linktxt);
+        }else if (conn.linksList[x].from==idx){
+            char *linktxt;
+            asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].to,conn.linksList[x].from,conn.linksList[x].cost);
+            removeLink(&conn, linktxt);
+            
         }
     }
     for (int x=0; x<conn.routerCount; x++) {
