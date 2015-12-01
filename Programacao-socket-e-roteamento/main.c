@@ -103,6 +103,9 @@ int removeRouter(connections *conn, router r){
         printf("Nó nao encontrado");
     }else if (indx>=0 && r.id!=conn->selfID) {
         router newRouter;
+        newRouter.id=0;
+        newRouter.port=-2;
+        strcpy(newRouter.ip, "");
         if (indx==conn->routerCount-1) {
             conn->routerList[indx]=newRouter;
             conn->routerCount--;
@@ -219,16 +222,6 @@ void prepareRoutingTable(connections *conn){
         }
     }
 }
-
-void updateRoutingTable(connections conn){
-//    for (int x=0; x<conn.linksCount; x++) {
-//        linkr l = conn.linksList[x];
-//        if (conn.routingTable[l.from][l.to].cost>l.cost) {
-//            conn.routingTable[l.from][l.to].cost
-//        }
-//    }
-}
-
 
 //======================================================
 #pragma mark - UPLOAD
@@ -548,8 +541,7 @@ void updateRoutingTableWithPackage(Package p){
                 conn.routingTable[l.to][l.from]=l;
                 
             }
-        }
-        if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
+        }else if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
             isBetterLink(l, conn.routingTable[l.to][l.from])&&
             isBetterLink(l, conn.routingTable[conn.selfID][l.to])){
             if (addLink(&conn, strLink)) {
@@ -560,6 +552,36 @@ void updateRoutingTableWithPackage(Package p){
             }
             
         }
+        
+//        else if ((!isBetterLink(l, conn.routingTable[l.from][l.to])&&
+//                  !isBetterLink(l, conn.routingTable[l.to][l.from])&&
+//                  !isBetterLink(l, conn.routingTable[conn.selfID][l.to]))&&
+//                  (routerOfIndex(l.to, conn.routerList).port<0||routerOfIndex(l.from, conn.routerList).port<0)){
+//            for (int x=0; x<conn.linksCount; x++) {
+//                if (conn.linksList[x].to==l.to||
+//                    conn.linksList[x].from==l.to||
+//                    conn.linksList[x].to==l.from||
+//                    conn.linksList[x].from==l.from) {
+//                    
+//                    linkr newLink;
+//                    if (x==conn.linksCount-1) {
+//                        conn.linksList[x]=newLink;
+//                        conn.linksCount--;
+//                    }else{
+//                        conn.linksList[x]=conn.linksList[conn.linksCount-1];
+//                        conn.linksList[conn.linksCount-1]=newLink;
+//                        conn.linksCount--;
+//                    }
+//                }
+//            }
+//            if (addLink(&conn, strLink)) {
+//                printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+//                conn.routingTable[l.from][l.to]=l;
+//                conn.routingTable[l.to][l.from]=l;
+//                
+//            }
+//        }
+//        
         
             //        }else{
 //            for (int x=0; x<conn.routerCount; x++) {
@@ -1021,6 +1043,14 @@ void chat(struct router destinationRouter, connections conn){
 }
 
 void removeAllId(int idx){
+    for (int x=0; x<conn.routerCount; x++) {
+        char *ipid;
+        asprintf(&ipid, "%d",idx);
+
+        if (conn.routerList[x].id==idx || strcmp(conn.routerList[x].ip,ipid)==0) {
+            removeRouter(&conn, conn.routerList[x]);
+        }
+    }
     for (int x=0; x<conn.linksCount; x++) {
         if (conn.linksList[x].to==idx) {
             char *linktxt;
@@ -1028,16 +1058,12 @@ void removeAllId(int idx){
             removeLink(&conn, linktxt);
         }else if (conn.linksList[x].from==idx){
             char *linktxt;
-            asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].to,conn.linksList[x].from,conn.linksList[x].cost);
+            asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
             removeLink(&conn, linktxt);
             
         }
     }
-    for (int x=0; x<conn.routerCount; x++) {
-        if (conn.routerList[x].id==idx) {
-            removeRouter(&conn, conn.routerList[x]);
-        }
-    }
+  
 }
 
 void presentRoutingTable(connections conn){
