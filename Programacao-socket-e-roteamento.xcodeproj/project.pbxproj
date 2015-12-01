@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		301938C01BFE8E5000217DDE /* Bellman-ford.c in Sources */ = {isa = PBXBuildFile; fileRef = 301938BE1BFE8E5000217DDE /* Bellman-ford.c */; };
 		3022E36B1BBE18E000751AA2 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 3022E36A1BBE18E000751AA2 /* main.c */; };
 		3069C66B1BC060F20028DBFC /* FileIO.c in Sources */ = {isa = PBXBuildFile; fileRef = 3069C6691BC060F20028DBFC /* FileIO.c */; };
 /* End PBXBuildFile section */
@@ -25,8 +24,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		301938BE1BFE8E5000217DDE /* Bellman-ford.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "Bellman-ford.c"; sourceTree = "<group>"; };
-		301938BF1BFE8E5000217DDE /* Bellman-ford.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Bellman-ford.h"; sourceTree = "<group>"; };
 		3022E3671BBE18E000751AA2 /* Programacao-socket-e-roteamento */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Programacao-socket-e-roteamento"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3022E36A1BBE18E000751AA2 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		3022E3711BBE1A6000751AA2 /* Defaults.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Defaults.h; sourceTree = "<group>"; };
@@ -70,8 +67,6 @@
 			children = (
 				3022E36A1BBE18E000751AA2 /* main.c */,
 				30B571DD1BC3762000C376AA /* main.h */,
-				301938BE1BFE8E5000217DDE /* Bellman-ford.c */,
-				301938BF1BFE8E5000217DDE /* Bellman-ford.h */,
 				3069C6691BC060F20028DBFC /* FileIO.c */,
 				3069C66A1BC060F20028DBFC /* FileIO.h */,
 				3022E3711BBE1A6000751AA2 /* Defaults.h */,
@@ -139,7 +134,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3069C66B1BC060F20028DBFC /* FileIO.c in Sources */,
-				301938C01BFE8E5000217DDE /* Bellman-ford.c in Sources */,
 				3022E36B1BBE18E000751AA2 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

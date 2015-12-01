@@ -18,7 +18,7 @@ Package receivingBuffer[ROUTING_BUFFER_SIZE];
 int sendingBufferIndex, receivingBufferIndex;
 
 struct connections conn;
-int autoIncrementalLocalRequestId; //teletar
+int autoIncrementalLocalRequestId;
 
 int stdOutDebugLevel;
 
@@ -36,7 +36,7 @@ int getRequestIdForPackage(){
     return autoIncrementalLocalRequestId++;
 }
 
-router routerOfIndex(int indx, router r[conn.routerCount]){ //teletar?
+router routerOfIndex(int indx, router r[conn.routerCount]){
     for (int x=0; x<conn.routerCount; x++) {
         if (r[x].id==indx) {
             return r[x];
@@ -227,32 +227,6 @@ void prepareRoutingTable(connections *conn){
 #pragma mark - UPLOAD
 //======================================================
 
-uploadSocket initUpClient(uploadSocket up){ //teletar
-
-    
-    
-    up.slen = sizeof(up.si_other);
-    
-    if ( (up.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    {
-        die("socket");
-    }
-    
-    memset((char *) &up.si_other, 0, sizeof(up.si_other));
-    up.si_other.sin_family = AF_INET;
-    up.si_other.sin_port = htons(up.port);
-    
-    
-    if (inet_aton(up.destination_IP , &up.si_other.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
-    
-    return up;
-}
-
-
 uploadSocket newSendRequestForPackage(Package p){
 
     uploadSocket newRequest;
@@ -276,7 +250,6 @@ uploadSocket newSendRequestForPackage(Package p){
         
         if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
         {
-//            die("socket");
             printf("SOCKET ERROR");
             newRequest.requestId=-1;
             break;
@@ -294,9 +267,6 @@ uploadSocket newSendRequestForPackage(Package p){
                 perror("send Message Socket Error");
             }
         }
-        
-        
-
     }
     
     return newRequest;
@@ -318,22 +288,18 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         status = 0;
         if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
-            //die("error sendto()");
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem para %d:%d",sendRequest.package.destinationId, sendRequest.port);
             return status;
         }else{
             status++;
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n-> %s",stringFromPackage(sendRequest.package));
         }
-        
-        //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
+        //LIMPA O BUFFER DE ENVIO
         memset(sendRequest.buf,'\0', MAX_USER_MSG_SIZE);
         
-        //try to receive some data, this is a blocking call
+        //AGUARDA RECEBIMENTO DO ACK
         if (recvfrom(sendRequest.s, sendRequest.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &sendRequest.si_other, &sendRequest.slen) == -1)
         {
-            //die("recvfrom()");
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK para o pacote %s",messageString);
             closeUp(sendRequest);
 
@@ -387,8 +353,6 @@ pthread_t initDownloadSocketThread(connections *conn){
     pthread_t download_Singleton;
     
     pthread_create(&download_Singleton, NULL, startDownListen, NULL);
-    
-    //    startDownListen(down);
     return download_Singleton;
 }
 
@@ -397,20 +361,20 @@ downloadSocket initDownClient(downloadSocket down){
     
     down.slen = sizeof(down.si_other);
     
-    //create a UDP socket
+    //CRIA O SOCKET
     if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
         die("socket");
     }
     
-    // zero out the structure
+    //ZERA A ESTRUTURA DO SOCKET
     memset((char *) &down.si_me, 0, sizeof(down.si_me));
     
     down.si_me.sin_family = AF_INET;
     down.si_me.sin_port = htons(down.port);
     down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
     
-    //bind socket to port
+    //INICIA O SOCKET
     if( bind(down.s , (struct sockaddr*)&down.si_me, sizeof(down.si_me) ) == -1)
     {
         die("bind");
@@ -419,15 +383,13 @@ downloadSocket initDownClient(downloadSocket down){
 }
 
 
-void * startDownListen(void){ //listener to download data on thread
+void * startDownListen(void){
     
-    //keep listening for data
     printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
     while(1)
     {
         fflush(stdout);
-        //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
+        //LIMPA O BUFFER DO SOCKET
         memset(conn.downloadSocket.buf,'\0', MAX_USER_MSG_SIZE);
         
         struct timeval tv;
@@ -438,22 +400,22 @@ void * startDownListen(void){ //listener to download data on thread
         }
         
         
-        //try to receive some data, this is a blocking call
+        //CHAMADA BLOQUEANTE, RECEBE INFORMACOES
         if ((conn.downloadSocket.recv_len = recvfrom(conn.downloadSocket.s, conn.downloadSocket.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &conn.downloadSocket.si_other, &conn.downloadSocket.slen)) == -1)
         {
-//            printf("\nerro recvfrom() timeout\n");
+            //printf("\nerro recvfrom() timeout\n");
         }else{
-            //print details of the client/peer and the data received
-//            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\nMENSAGEM RECEBIDA DE %s:%d\n", inet_ntoa(conn.downloadSocket.si_other.sin_addr), ntohs(conn.downloadSocket.si_other.sin_port));
+            //IMPRESSAO DO PACOTE RECEBIDO
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
             
-            //add to buffer
+            //ADICIONA NO BUFFER
             if (receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status==PACKAGE_STATUS_DONE) {
                 receivingBufferIndex=1;
             }else if(receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status!=PACKAGE_STATUS_DONE){
                 printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
+            
             Package received = packageFromString(conn.downloadSocket.buf);
             received.status = PACKAGE_STATUS_READY;
             if (receivingBufferIndex==ROUTING_BUFFER_SIZE) {
@@ -463,7 +425,7 @@ void * startDownListen(void){ //listener to download data on thread
             receivingBufferIndex++;
 
             Package ackPkg = ackPackage(received);
-            //now reply the client with the same data
+            //RESPONDE O PACOTE COM O ACK
             if (sendto(conn.downloadSocket.s, stringFromPackage(ackPkg), conn.downloadSocket.recv_len, 0, (struct sockaddr*) &conn.downloadSocket.si_other, conn.downloadSocket.slen) == -1)
             {
                 die("sendto()");
@@ -552,50 +514,7 @@ void updateRoutingTableWithPackage(Package p){
             }
             
         }
-        
-//        else if ((!isBetterLink(l, conn.routingTable[l.from][l.to])&&
-//                  !isBetterLink(l, conn.routingTable[l.to][l.from])&&
-//                  !isBetterLink(l, conn.routingTable[conn.selfID][l.to]))&&
-//                  (routerOfIndex(l.to, conn.routerList).port<0||routerOfIndex(l.from, conn.routerList).port<0)){
-//            for (int x=0; x<conn.linksCount; x++) {
-//                if (conn.linksList[x].to==l.to||
-//                    conn.linksList[x].from==l.to||
-//                    conn.linksList[x].to==l.from||
-//                    conn.linksList[x].from==l.from) {
-//                    
-//                    linkr newLink;
-//                    if (x==conn.linksCount-1) {
-//                        conn.linksList[x]=newLink;
-//                        conn.linksCount--;
-//                    }else{
-//                        conn.linksList[x]=conn.linksList[conn.linksCount-1];
-//                        conn.linksList[conn.linksCount-1]=newLink;
-//                        conn.linksCount--;
-//                    }
-//                }
-//            }
-//            if (addLink(&conn, strLink)) {
-//                printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
-//                conn.routingTable[l.from][l.to]=l;
-//                conn.routingTable[l.to][l.from]=l;
-//                
-//            }
-//        }
-//        
-        
-            //        }else{
-//            for (int x=0; x<conn.routerCount; x++) {
-//                if (conn.routerList[x].id==r.id) {
-//                    strcpy(conn.routerList[x].ip, p.senderIP);
-//                    conn.routerList[x].port = p.senderPort;
-//                }
-//            }
-//        }
     }
-    //free(tokens);
-    //criar o algoritmo de convergencia dos vetores de distancia
-    
-    
 }
 void setackPackage(Package p){
     printf("\n<=============================\n| Mensagem %d com sucesso!! \n<=============================\n", p.packageId);
@@ -650,8 +569,6 @@ void * routing(){
         }
         
     }
-    
-    
 }
 
 Package ackPackage(Package p){
@@ -678,25 +595,7 @@ Package ackPackage(Package p){
 
 
 Package packageFromString(char *s){
-    
-//    char separator = '@';
-//    char** tokens;
-//    tokens = str_split(s, separator);
-//    
-//    Package p;
-//    
-//    p.localId = atoi(tokens[0]);
-//    p.destinationId = atoi(tokens[1]);
-//    strcpy(p.destinationIP, tokens[2]);
-//    p.port = atoi(tokens[3]);
-//    p.ttl = atoi(tokens[4]);
-//    p.type = atoi(tokens[5]);
-////    p.senderId = atoi(tokens[6]); //teletar
-//    strcpy(p.senderIP, tokens[6]);
-//    strcpy(p.message, tokens[7]);
-//    p.status = PACKAGE_STATUS_READY;
 
-    
     char *token;
     char *rest = s;
     
@@ -704,9 +603,6 @@ Package packageFromString(char *s){
     int i=0;
     while((token = strtok_r(rest, "@", &rest)))
     {
-        
-        //    p.senderId = atoi(tokens[6]); //teletar
-
         switch (i) {
             case 0:
                 p.localId = atoi(token);
@@ -825,17 +721,6 @@ void * sendLinksBroadcast(){
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
             p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
-            
-//            uploadSocket sendRequest = newSendRequestForPackage(p);
-            addSendPackageToBuffer(p);
-//            while (sendRequest.requestId>0 && sendRequest.package.ttl>=0) {
-//                if (sendRequest.package.ttl<=0) {
-////                    removeAllId(sendRequest.package.destinationId);
-//                    break;
-//                }else if (sendPackageWithRequest(sendRequest)==REQUEST_STATUS_SEND_NO_ANSWER) {
-//                    sendRequest.package.ttl--;
-//                }
-//            }
         }
         if (x>=conn.linksCount-1) {
             sleep(5);
@@ -861,7 +746,7 @@ linkr connectedLinkToDestinationId(int from, int to, int deep){
         removeAllId(from);
         removeAllId(to);
     }
-    if (/*shortestNext.from==from||shortestNext.to==to*/shortestNext.isDirectlyConnected) {
+    if (shortestNext.isDirectlyConnected) {
         return shortestNext;
     }else{
         return connectedLinkToDestinationId(from, shortestNext.from, deep++);
@@ -890,8 +775,7 @@ Package routedPackage(Package p){
     }
     linkr l= connectedLinkToDestinationId(p.localId, p.destinationId,0);
     
-    if ((l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from))) { //teletar
-//        printf("Directly connected"); //teletar
+    if ((l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from))) {
         return p;
     }else{
         router r = routerOfIndex(indexForBidirectionalLink(l), conn.routerList);
@@ -921,8 +805,6 @@ Package routedPackage(Package p){
 
 void * flushSendBuffer(){
     while (1) {
-//        sleep(1);
-        
         for (int index = 0; sendingBufferIndex; index++) {
             if (index>sendingBufferIndex) {
                 index=0;
@@ -979,11 +861,11 @@ void println(int x){
 }
 
 void printRouter(router r){
-    printf("| ID: %d | Porta: %d | IP: %s\n",r.id,r.port,r.ip);
+    printf("| ID: %d | Porta: %d | DESTINO: %s\n",r.id,r.port,r.ip);
 }
 
 void printRouters(connections conn){
-    for (int x=0; x<conn.routerCount; x++) { //teletar
+    for (int x=0; x<conn.routerCount; x++) {
         printRouter(conn.routerList[x]);
     }
 }
@@ -1135,9 +1017,7 @@ void interface(connections *conn){
                 printf("\n\n=====[Detalhamento dos enlaces]=====\n");
                 printRouters(*conn);
                 router r;
-//                while (r.id<0) {
-                    r = chooseDestination(*conn);
-//                }
+                r = chooseDestination(*conn);
                 chat(r, *conn);
 
             }
@@ -1152,20 +1032,12 @@ void interface(connections *conn){
             if (strcmp(option, "4")==0) {
                 presentRoutingTable(*conn);
             }
-//            if (strcmp(option, ":menu")==0) {
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
             printf("[ 1 ] Enlaces e nos conectados\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
             printf("[ 4 ] Tabela de roteamento\nSelecione um item: ");
-//            }
         
         scanf("%9s",option);
-
-        //        scanf("%s",package);
-
-        
-        
-        
     }
     
 }
@@ -1196,7 +1068,7 @@ int main(int argc, const char * argv[]) {
 
         conn.selfID = atoi(argv[1]);
 
-        autoIncrementalLocalRequestId=0; //teletar?
+        autoIncrementalLocalRequestId=0;
         sendingBufferIndex=receivingBufferIndex=0;
         
         stdOutDebugLevel = DEBUG_ALL;
@@ -1223,52 +1095,6 @@ int main(int argc, const char * argv[]) {
         
         sleep(1); // tempo para o socket de download ser inicializado
         interface(&conn);
-        
-        //GATEWAY CONFIG INITIALIZATION
-//        router self_router = routerOfIndex(conn.selfID, conn.routerList);
-
-        
-        //ROUTING SINGLETONS
-//        if (strcmp(argv[2], "c")==0) {
-//            
-//            //SINGLETON FOR DOWNLOAD/LISTENING DATA
-//            prepareForDownload();
-//            
-//            sleep(1); //preparation for singleton init
-//            interface(conn);
-//            //interface(routers/*, links*/,self);
-//        }else if(strcmp(argv[2], "r")==0){
-//            printf("STARTING ROUTING MODE ID: %s \n",argv[1]);
-//            self.download = initDownClient(self.download);
-//
-//            routing(self, self.download, conn.routerList);
-//        }
-        
-        
-        
-        //
-//        router self_router;
-//        self_router.id = 1;
-//        strcpy(self_router.ip, "127.0.0.1");
-//        self_router.port = 8888;
-//
-//        SelfRouter self;
-//        self.download.port = self_router.port;
-//        self.idNumber = self.download.idNumber = self_router.id;
-//        
-//        prepareForDownload(self.download);
-//
-//        
-//        SelfRouter selfi;
-//        selfi.download.port = self_router.port;
-//        selfi.idNumber = selfi.download.idNumber = self_router.id;
-//        
-//        prepareForDownload(selfi.download);
-
-        
-//        Edge Arestas[10] = {{0,1,1},{1,2,2},{2,3,3}};
-        // BellmanFord(Estrutura, arestas, vertices,origem);
-//        BellmanFord(Arestas, 2, 3, 1);
     }
     return 0;
 }
