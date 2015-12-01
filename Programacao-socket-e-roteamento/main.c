@@ -145,6 +145,7 @@ int addLink(connections *conn, char linktxt[10]){
     }else{
         return 0;
     }
+    
     return status;
 }
 
@@ -501,7 +502,7 @@ void updateRoutingTableWithPackage(Package p){
                 printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
                 conn.routingTable[l.from][l.to]=l;
                 conn.routingTable[l.to][l.from]=l;
-                
+                presentRoutingTable(conn.routingTable);
             }
         }else if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
             isBetterLink(l, conn.routingTable[l.to][l.from])&&
@@ -510,7 +511,7 @@ void updateRoutingTableWithPackage(Package p){
                 printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
                 conn.routingTable[l.from][l.to]=l;
                 conn.routingTable[l.to][l.from]=l;
-                
+                presentRoutingTable(conn.routingTable);
             }
             
         }
@@ -943,18 +944,21 @@ void removeAllId(int idx){
             char *linktxt;
             asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
             removeLink(&conn, linktxt);
+            presentRoutingTable(conn.routingTable);
         }else if (conn.linksList[x].from==idx){
             char *linktxt;
             asprintf(&linktxt, "%d-%d-%d",conn.linksList[x].from,conn.linksList[x].to,conn.linksList[x].cost);
             removeLink(&conn, linktxt);
+            presentRoutingTable(conn.routingTable);
+            
             
         }
     }
   
 }
 
-void presentRoutingTable(connections conn){
-    printf("\n=====[TABELA DE ROTEAMENTO]=====\n\n   ");
+void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
+    printf("\n\n=====[TABELA DE ROTEAMENTO]===== Timestamp: %s\n\n   ",time_stamp());
     for (int y=0; y<conn.routerCount; y++) {
         printf(" %2d ",conn.routerList[y].id);
     }
@@ -972,6 +976,7 @@ void presentRoutingTable(connections conn){
         }
         
     }
+    printf("\n\n");
         
 }
 
@@ -1031,7 +1036,7 @@ void interface(connections *conn){
                 addSendPackageToBuffer(new);
             }
             if (strcmp(option, "4")==0) {
-                presentRoutingTable(*conn);
+                presentRoutingTable(conn->routingTable);
             }
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");

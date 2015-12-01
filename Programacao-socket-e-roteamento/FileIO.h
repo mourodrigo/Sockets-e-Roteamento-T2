@@ -24,4 +24,5 @@ char * replace(
                char const * const replacement
                );
 linkr linkFromChar(char *text, char *separator);
+char *time_stamp();
 #endif /* defined(____FileIO__) */

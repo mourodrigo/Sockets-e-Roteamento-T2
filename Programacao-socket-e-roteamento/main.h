@@ -11,12 +11,7 @@
 
 #include "Defaults.h"
 #include "FileIO.h"
-
-//#include "server-tcp.h"
-//#include "server-udp.h"
-//#include "client-tcp.h"
-//#include "client-udp.h"
-
+#include <sys/time.h>
 #include "RouterIO.h"
 
 void printRouter(router r);
@@ -30,4 +25,5 @@ void printLinks(connections conn);
 void removeAllId(int idx);
 Package ackPackage(Package p);
 void closeUp(uploadSocket up);
+void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]);
 #endif
