@@ -721,6 +721,7 @@ void * sendLinksBroadcast(){
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
             p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
+            addSendPackageToBuffer(p);
         }
         if (x>=conn.linksCount-1) {
             sleep(5);
