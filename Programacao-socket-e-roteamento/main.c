@@ -849,7 +849,7 @@ void * sendLinksBroadcast(){
     return NULL;
 }
 
-linkr connectedLinkToDestinationId(int from, int to){
+linkr connectedLinkToDestinationId(int from, int to, int deep){
     linkr shortestNext;
     shortestNext.cost=999;
     for (int r=0; r<conn.linksCount; r++) {
@@ -857,10 +857,14 @@ linkr connectedLinkToDestinationId(int from, int to){
             shortestNext=conn.linksList[r];
         }
     }
+    if (deep>conn.routerCount) {
+        removeAllId(from);
+        removeAllId(to);
+    }
     if (/*shortestNext.from==from||shortestNext.to==to*/shortestNext.isDirectlyConnected) {
         return shortestNext;
     }else{
-        return connectedLinkToDestinationId(from, shortestNext.from);
+        return connectedLinkToDestinationId(from, shortestNext.from, deep++);
     }
 }
 
@@ -884,8 +888,8 @@ Package routedPackage(Package p){
     if (p.type==PACKAGE_TYPE_BROADCAST) {
         return p;
     }
+    linkr l= connectedLinkToDestinationId(p.localId, p.destinationId,0);
     
-    linkr l = connectedLinkToDestinationId(p.localId, p.destinationId);
     if ((l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from))) { //teletar
 //        printf("Directly connected"); //teletar
         return p;
