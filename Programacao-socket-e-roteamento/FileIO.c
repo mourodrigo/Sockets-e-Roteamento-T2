@@ -128,7 +128,8 @@ connections readRouters(char filepath[], connections conn){
     
     if (!fr) {
         printf("\n\nARQUIVO DE CONFIGURAÇÃO DE ROTEADORES NÃO ENCONTRADO. DEFINA O CAMINHO EM : Default.h \n\n");
-        exit(0);
+        printf("\n\nInicializando sem arquivo de configuração, novos roteadores serao adicionados caso receba comunicacao dos enlaces\n\n");
+        return conn;
     }
 
     
@@ -166,14 +167,6 @@ connections readRouters(char filepath[], connections conn){
 
 
 linkr linkFromChar(char *text, char *separator){
-//    char** tokens;
-//    linkr l;
-//    tokens = str_split(text, separator);
-//    
-//    l.from = atoi(tokens[0]);
-//    l.to = atoi(tokens[1]);
-//    l.cost = atoi(tokens[2]);
-//    return l; //teletar?
     
     char *packageToken;
     char *packagerest = text;
@@ -215,8 +208,9 @@ connections readLinks(char filepath[],connections conn){
     fr = fopen (filepath, "r");
     
     if (!fr) {
-        printf("\n\nARQUIVO DE CONFIGURAÇÃO DE ENLACES NÃO ENCONTRADO. DEFINA O CAMINHO EM : Default.h \n\n");
-        exit(0);
+        printf("\n\nARQUIVO DE CONFIGURAÇÃO DE ENLACES NÃO ENCONTRADO. DEFINIR O CAMINHO EM : Default.h \n\n");
+        printf("\n\nInicializando sem arquivo de configuração, novos enlaces serao adicionados caso receba comunicacao dos enlaces\n\n");
+        return conn;
     }
     
     int indx = 0;
