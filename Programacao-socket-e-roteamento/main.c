@@ -563,7 +563,7 @@ void * routing(){
                     break;
                 case PACKAGE_TYPE_FORWARD:
                     printForwardPackage(p);
-                    Package toRoute = packageFromString(p.message);
+                    Package toRoute = routedPackage(packageFromString(p.message));
                     toRoute.packageId = getRequestIdForPackage();
                     addSendPackageToBuffer(toRoute);
                     break;
@@ -791,6 +791,9 @@ Package routedPackage(Package p){
     linkr l= connectedLinkToDestinationId(p.localId, p.destinationId,0);
     
     if ((l.isDirectlyConnected==1&&(p.destinationId==l.to||p.destinationId==l.from))) {
+        router r = routerOfIndex(l.to, conn.routerList);
+        p.port = r.port;
+        strcpy(p.destinationIP, r.ip);
         return p;
     }else{
         router r = routerOfIndex(indexForBidirectionalLink(l), conn.routerList);

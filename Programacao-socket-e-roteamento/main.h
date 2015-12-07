@@ -25,5 +25,6 @@ void printLinks(connections conn);
 void removeAllId(int idx);
 Package ackPackage(Package p);
 void closeUp(uploadSocket up);
+Package routedPackage(Package p);
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]);
 #endif
