@@ -78,6 +78,7 @@ typedef struct linkr{
     int cost;
     char path[MAX_PATH_STRING_SIZE];
     int isDirectlyConnected;
+    int ttl;
 }linkr;
 
 typedef struct connections{

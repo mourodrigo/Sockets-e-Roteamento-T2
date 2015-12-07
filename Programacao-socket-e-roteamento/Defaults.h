@@ -16,8 +16,8 @@
 #include "limits.h"
 
 //CONFIG FILE
-#define PATH_ROUTER_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/roteador.config"
-#define PATH_LINKS_FILE "/Users/macmouro/Developer/programa-o-socket-e-roteamento/Programacao-socket-e-roteamento/enlaces.config"
+#define PATH_ROUTER_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/roteador.config"
+#define PATH_LINKS_FILE "/Users/mourodrigo/Developer/Sockets-e-Roteamento-T2/Programacao-socket-e-roteamento/enlaces.config"
 
 #define ROUTER_FILE_NAME "roteador.config"
 #define LINKS_FILE_NAME "enlaces.config"
@@ -36,6 +36,7 @@
 #define SEND_TRIES 1
 #define MAX_TTL 15
 #define MAX_TTL_BROADCAST 2
+#define MAX_LINK_TTL 15
 
 //DEBUG
 #define DEBUG_ERROR_ONLY 1
