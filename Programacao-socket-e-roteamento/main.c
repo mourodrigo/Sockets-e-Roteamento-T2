@@ -252,7 +252,6 @@ uploadSocket newSendRequestForPackage(Package p){
         
         if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
         {
-            printf("SOCKET ERROR");
             newRequest.requestId=-1;
             break;
             if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
@@ -494,7 +493,7 @@ void updateRoutingTableWithPackage(Package p){
         router r = routerOfIndex(l.to, conn.routerList);
         int indxOfLink = indexOfLinkInConnections(l);;
         if (indxOfLink<0) {
-            if (r.id<0 && l.from==conn.selfID) {
+            if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
                 r.port = p.senderPort;
                 strcpy(r.ip, p.senderIP);
                 r.id = p.localId;
@@ -738,7 +737,7 @@ void * sendLinksBroadcast(){
             }
         }
         if (x>=conn.linksCount-1) {
-            sleep(5);
+            sleep(3);
             x=0;
         }else{
             x++;
@@ -904,12 +903,15 @@ router chooseDestination(connections conn){
     router r;
     r.id=-1;
     while (r.id<0) {
+        char option[10] = "";
         
         printf("\nEscolha o id do destinatário: ");
-        int indx;
-        scanf("%d",&indx);
+        scanf("%s",option);
+        int indx = atoi(option);
         if (indx>0) {
             r=routerOfIndex(indx, conn.routerList);
+        }else{
+            break;
         }
     }
     return r;
@@ -955,7 +957,7 @@ void removeAllId(int idx){
 
         if (conn.routerList[x].id==idx || strcmp(conn.routerList[x].ip,ipid)==0) {
             removeRouter(&conn, conn.routerList[x]);
-            printf("\n!!No removido!!");
+            printf("\n!!No %d removido!!", idx);
         }
     }
     for (int x=0; x<conn.linksCount; x++) {
@@ -969,7 +971,7 @@ void removeAllId(int idx){
                 conn.linksList[conn.linksCount-1]=newLink;
                 conn.linksCount--;
             }
-            printf("\n!!Enlace removido!!");
+            printf("\n!!Enlace para %d removido!!", idx);
             presentRoutingTable(conn.routingTable);
         }
     }
@@ -1044,7 +1046,9 @@ void interface(connections *conn){
                 printRouters(*conn);
                 router r;
                 r = chooseDestination(*conn);
-                chat(r, *conn);
+                if (r.id>0) {
+                    chat(r, *conn);
+                }
 
             }
             if (strcmp(option, "3")==0) {
