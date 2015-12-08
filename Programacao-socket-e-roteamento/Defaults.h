@@ -9,6 +9,8 @@
 #ifndef Programacao_socket_e_roteamento_Defaults_h
 #define Programacao_socket_e_roteamento_Defaults_h
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
