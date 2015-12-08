@@ -9,6 +9,8 @@
 #ifndef ____FileIO__
 #define ____FileIO__
 
+#define _GNU_SOURCE
+
 #include <stdio.h>   /* required for file operations */
 #include <string.h>
 #include <assert.h>

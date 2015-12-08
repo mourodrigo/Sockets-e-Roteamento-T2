@@ -9,6 +9,8 @@
 #ifndef ____RouterIO__
 #define ____RouterIO__
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include<string.h> //memset
 #include<stdlib.h> //exit(0);

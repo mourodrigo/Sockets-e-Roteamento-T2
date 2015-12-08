@@ -9,6 +9,8 @@
 #ifndef Programacao_socket_e_roteamento_main_h
 #define Programacao_socket_e_roteamento_main_h
 
+#define _GNU_SOURCE
+
 #include "Defaults.h"
 #include "FileIO.h"
 #include <sys/time.h>
