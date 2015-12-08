@@ -51,8 +51,8 @@ router routerOfIndex(int indx, router r[conn.routerCount]){
 int indexOfLinkInConnections(linkr l){
     for (int x =0; x<conn.linksCount; x++) {
         if (l.from == conn.linksList[x].from &&
-            l.to == conn.linksList[x].to /*&&
-            l.cost == conn.linksList[x].cost*/) {
+            l.to == conn.linksList[x].to &&
+            l.cost == conn.linksList[x].cost) {
             return x;
         }
     }
@@ -132,6 +132,7 @@ int addLink(linkr link){
         l = link;
     }
     if (indexOfLinkInConnections(l)<0) {
+        /*
         if (routerOfIndex(l.to, conn.routerList).id<0) {
             router r;
             r.id = l.to;
@@ -139,7 +140,7 @@ int addLink(linkr link){
             r.port = -1;
             addRouter(&conn, r);
 
-        }
+        }*///teletar?
         l.ttl = MAX_LINK_TTL;
         conn.linksList[conn.linksCount] = l;
         conn.linksCount++;
@@ -496,8 +497,61 @@ void updateRoutingTableWithPackage(Package p){
             }
             i++;
         }
-        router r = routerOfIndex(l.to, conn.routerList);
         int indxOfLink = indexOfLinkInConnections(l);
+        if (indxOfLink>=0) {
+            conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
+        }else{
+            if (isBetterLink(l, conn.routingTable[l.from][l.to])
+                &&isBetterLink(l, conn.routingTable[l.to][l.from])
+                //&&isBetterLink(l, conn.routingTable[conn.selfID][l.to]) //teletar?
+                ) {
+                router r = routerOfIndex(l.to, conn.routerList); //l.from?!
+                if (r.id>=0 && (l.from==conn.selfID || l.to==conn.selfID) && r.port<0){
+                    while (r.id>=0) {
+                        removeRouter(&conn, r);
+                        r = routerOfIndex(l.to, conn.routerList);
+                    }
+                }
+                if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
+                    r.port = p.senderPort;
+                    strcpy(r.ip, p.senderIP);
+                    r.id = p.localId;
+                    addRouter(&conn, r);
+                    l.isDirectlyConnected=1;
+                }else if(r.id<0 && !(l.from==conn.selfID || l.to==conn.selfID)){
+                    router newr;
+                    newr.id = l.to;
+                    sprintf(newr.ip, "%d",l.from);
+                    newr.port = -1;
+                    l.isDirectlyConnected=0;
+                    addRouter(&conn, newr);
+                }
+                if (addLink(l)) {
+                    printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+                    conn.routingTable[l.from][l.to]=l;
+                    conn.routingTable[l.to][l.from]=l;
+                    presentRoutingTable(conn.routingTable);
+                }
+                }
+                
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        /*
+        
         if (indxOfLink<0) {
             if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
                 r.port = p.senderPort;
@@ -527,7 +581,7 @@ void updateRoutingTableWithPackage(Package p){
             conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
         }
         
-    }
+    }*/
 }
 void setackPackage(Package p){
     printf("\n<=============================\n| Mensagem %d com sucesso!! \n<=============================\n", p.packageId);
