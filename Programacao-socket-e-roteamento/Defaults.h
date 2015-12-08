@@ -36,7 +36,7 @@
 #define SEND_TRIES 1
 #define MAX_TTL 15
 #define MAX_TTL_BROADCAST 2
-#define MAX_LINK_TTL 15
+#define MAX_LINK_TTL 5
 
 //DEBUG
 #define DEBUG_ERROR_ONLY 1

@@ -23,6 +23,7 @@ int autoIncrementalLocalRequestId;
 int stdOutDebugLevel;
 
 
+
 void die(char *s)
 {
     perror(s);
@@ -50,8 +51,8 @@ router routerOfIndex(int indx, router r[conn.routerCount]){
 int indexOfLinkInConnections(linkr l){
     for (int x =0; x<conn.linksCount; x++) {
         if (l.from == conn.linksList[x].from &&
-            l.to == conn.linksList[x].to &&
-            l.cost == conn.linksList[x].cost) {
+            l.to == conn.linksList[x].to /*&&
+            l.cost == conn.linksList[x].cost*/) {
             return x;
         }
     }
@@ -348,9 +349,9 @@ void addSendPackageToBuffer(Package p){
 //======================================================
 
 pthread_t initDownloadSocketThread(connections *conn){
-    conn->downloadSocket.port = conn->selfRouter.port;
-    conn->downloadSocket.idNumber = conn->selfRouter.id;
-    conn->downloadSocket = initDownClient(conn->downloadSocket);
+//    conn->downloadSocket.port = conn->selfRouter.port;
+//    conn->downloadSocket.idNumber = conn->selfRouter.id; //teletar
+//    conn->downloadSocket = initDownClient(conn->downloadSocket);
     pthread_t download_Singleton;
     
     pthread_create(&download_Singleton, NULL, startDownListen, NULL);
@@ -389,6 +390,11 @@ void * startDownListen(void){
     printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
     while(1)
     {
+        
+        conn.downloadSocket.port = conn.selfRouter.port;
+        conn.downloadSocket.idNumber = conn.selfRouter.id;
+        conn.downloadSocket = initDownClient(conn.downloadSocket);
+
         fflush(stdout);
         //LIMPA O BUFFER DO SOCKET
         memset(conn.downloadSocket.buf,'\0', MAX_USER_MSG_SIZE);
@@ -419,7 +425,7 @@ void * startDownListen(void){
             
             Package received = packageFromString(conn.downloadSocket.buf);
             received.status = PACKAGE_STATUS_READY;
-            if (receivingBufferIndex==ROUTING_BUFFER_SIZE) {
+            if (receivingBufferIndex>=ROUTING_BUFFER_SIZE) {
                 receivingBufferIndex=1;
             }
             receivingBuffer[receivingBufferIndex]=received;
@@ -434,7 +440,7 @@ void * startDownListen(void){
             
         }
         
-        
+        closeDown(conn.downloadSocket);
     }
 }
 
@@ -491,7 +497,7 @@ void updateRoutingTableWithPackage(Package p){
             i++;
         }
         router r = routerOfIndex(l.to, conn.routerList);
-        int indxOfLink = indexOfLinkInConnections(l);;
+        int indxOfLink = indexOfLinkInConnections(l);
         if (indxOfLink<0) {
             if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
                 r.port = p.senderPort;
@@ -748,6 +754,14 @@ void * sendLinksBroadcast(){
     return NULL;
 }
 
+void initRouting(){
+    printf("Iniciando envio de pacotes com informações de enlace em 10 segundos.");
+    sleep(10);
+    pthread_t sendLinksBroadcastSingleton;
+    pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
+}
+
+
 linkr connectedLinkToDestinationId(int from, int to, int deep){
     linkr shortestNext;
     shortestNext.cost=999;
@@ -963,6 +977,10 @@ void removeAllId(int idx){
     for (int x=0; x<conn.linksCount; x++) {
         if (conn.linksList[x].to==idx || conn.linksList[x].from==idx) {
             linkr newLink;
+            newLink.from=newLink.to=newLink.ttl=0;
+            newLink.cost=99;
+            conn.routingTable[conn.linksList[x].to][conn.linksList[x].from]=newLink;
+            conn.routingTable[conn.linksList[x].from][conn.linksList[x].to]=newLink;
             if (x==conn.linksCount-1) {
                 conn.linksList[x]=newLink;
                 conn.linksCount--;
@@ -1062,6 +1080,17 @@ void interface(connections *conn){
             if (strcmp(option, "4")==0) {
                 presentRoutingTable(conn->routingTable);
             }
+            if (strcmp(option, "4")==0) {
+                println(5);
+                printf("\n\n=====[Lista de enlaces]=====\n");
+                printLinks(*conn);
+                printf("\n\n=====[Detalhamento dos enlaces]=====\n");
+                printRouters(*conn);
+
+                presentRoutingTable(conn->routingTable);
+            }
+
+        
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
             printf("[ 1 ] Enlaces e nos conectados\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
@@ -1109,19 +1138,18 @@ int main(int argc, const char * argv[]) {
         conn = readLinks(PATH_LINKS_FILE, conn);
         conn = readRouters(PATH_ROUTER_FILE, conn);
         addRouter(&conn, conn.selfRouter);
-        
-        
-        pthread_t flushSendBufferSingleton;
-        pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
-      
-        pthread_t sendLinksBroadcastSingleton;
-        pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
-        
-        pthread_t downloadSocketSingleton = initDownloadSocketThread(&conn);
 
+        //pthread_t downloadSocketSingleton = //teletar
+        initDownloadSocketThread(&conn);
+
+        
         pthread_t routingSingleton;
         pthread_create(&routingSingleton, NULL, routing, NULL);
 
+        pthread_t flushSendBufferSingleton;
+        pthread_create(&flushSendBufferSingleton, NULL, flushSendBuffer, NULL);
+      
+        initRouting();
         
         sleep(1); // tempo para o socket de download ser inicializado
         interface(&conn);

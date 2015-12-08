@@ -26,5 +26,6 @@ void removeAllId(int idx);
 Package ackPackage(Package p);
 void closeUp(uploadSocket up);
 Package routedPackage(Package p);
+void closeDown(downloadSocket down);
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]);
 #endif
