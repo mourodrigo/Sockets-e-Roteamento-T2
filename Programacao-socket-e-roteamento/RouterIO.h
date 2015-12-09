@@ -78,7 +78,7 @@ typedef struct linkr{
     int from;
     int to;
     int cost;
-    char path[MAX_PATH_STRING_SIZE];
+    int remoteId;
     int isDirectlyConnected;
     int ttl;
 }linkr;

@@ -221,6 +221,7 @@ connections readLinks(char filepath[],connections conn){
 #endif
         linkr l = linkFromChar(line, " ");
         l.isDirectlyConnected=1;
+        l.remoteId=99;
         if (l.to==conn.selfID) {
             l.to=l.from;
             l.from=conn.selfID;

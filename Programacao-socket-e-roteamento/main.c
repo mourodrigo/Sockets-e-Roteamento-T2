@@ -478,7 +478,7 @@ void updateRoutingTableWithPackage(Package p){
         char *packageToken;
         char *packagerest = token;
         
-        char strLink[15];
+        char strLink[30];
         strcpy(strLink, token);
 
         linkr l;
@@ -497,13 +497,20 @@ void updateRoutingTableWithPackage(Package p){
             }
             i++;
         }
+        l.remoteId=p.localId;
         int indxOfLink = indexOfLinkInConnections(l);
         if (indxOfLink>=0) {
-            conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
+            if (conn.linksList[indxOfLink].remoteId==p.localId||conn.linksList[indxOfLink].remoteId==99) {
+                conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
+            }else{
+                    printf("ne");
+                    
+            }
+            
         }else{
             if (isBetterLink(l, conn.routingTable[l.from][l.to])
                 &&isBetterLink(l, conn.routingTable[l.to][l.from])
-                //&&isBetterLink(l, conn.routingTable[conn.selfID][l.to]) //teletar?
+                &&isBetterLink(l, conn.routingTable[conn.selfID][l.to])
                 ) {
                 router r = routerOfIndex(l.to, conn.routerList); //l.from?!
                 if (r.id>=0 && (l.from==conn.selfID || l.to==conn.selfID) && r.port<0){
@@ -525,6 +532,8 @@ void updateRoutingTableWithPackage(Package p){
                     newr.port = -1;
                     l.isDirectlyConnected=0;
                     addRouter(&conn, newr);
+                }else{
+                    l.isDirectlyConnected=0;
                 }
                 if (addLink(l)) {
                     printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
@@ -762,7 +771,7 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
     int y=conn.linksCount-1;
     asprintf(&str, "%s%d-%d-%d|",str,l.to,l.from,l.cost);
     while (y>=0) {
-        if (l.to!=conn.linksList[y].from && l.to!=conn.linksList[y].to) {
+        if (/*l.to!=conn.linksList[y].from && l.to!=conn.linksList[y].to*/l.to!=conn.linksList[y].remoteId) {
             asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[y].from,conn.linksList[y].to,conn.linksList[y].cost+l.cost);
         }
         y--;
@@ -809,8 +818,8 @@ void * sendLinksBroadcast(){
 }
 
 void initRouting(){
-    printf("Iniciando envio de pacotes com informações de enlace em 10 segundos.");
-    sleep(10);
+    printf("Iniciando envio de pacotes com informações de enlace em 5 segundos.");
+    sleep(5);
     pthread_t sendLinksBroadcastSingleton;
     pthread_create(&sendLinksBroadcastSingleton, NULL, sendLinksBroadcast, NULL);
 }
@@ -1023,7 +1032,7 @@ void removeAllId(int idx){
         char *ipid;
         asprintf(&ipid, "%d",idx);
 
-        if (conn.routerList[x].id==idx || strcmp(conn.routerList[x].ip,ipid)==0) {
+        if (conn.routerList[x].id==idx /*|| strcmp(conn.routerList[x].ip,ipid)==0*/) {
             removeRouter(&conn, conn.routerList[x]);
             printf("\n!!No %d removido!!", idx);
         }
@@ -1051,6 +1060,14 @@ void removeAllId(int idx){
 }
 
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
+    
+    println(5); //teletar
+    printf("\n\n=====[Lista de enlaces]=====\n");
+    printLinks(conn);
+    printf("\n\n=====[Detalhamento dos enlaces]=====\n");
+    printRouters(conn);
+
+    
     printf("\n\n=====[TABELA DE ROTEAMENTO]===== Timestamp: %s\n\n   ",time_stamp());
     for (int y=0; y<conn.routerCount; y++) {
         printf(" %2d ",conn.routerList[y].id);
@@ -1083,32 +1100,32 @@ void interface(connections *conn){
                 printLinks(*conn);
                 printf("=====[Detalhamento dos nos encontrados]=====\n");
                 printRouters(*conn);
-                printf("\n\n [ 1 ] Adicionar enlace\n [ 2 ] Editar enlace\n [ 3 ] Remover enlace \n Selecione um item (:menu para voltar):");
-                scanf("%9s",option);
-                if (strcmp(option, "1")==0) {
-                    linkr l;
-                    if (addLink(l)) {
-                        printf("\n\nEnlace adicionado!!\n\n");
-                    }else{
-                        printf("\n\nEnlace já existente!!\n\n");
-                    }
-                    strcpy(option, ":menu");
-                }else if (strcmp(option, "2")==0) {
-                    editLink(conn, "");
-                    strcpy(option, ":menu");
-                }else if (strcmp(option, "3")==0) {
-                    
-                    if(removeLink(conn, "")){
-                        printf("!!Enlace removido!!");
-                    }else{
-                        printf("!!Enlace não removido!!");
-                    }
-                    strcpy(option, ":menu");
-   
-                }else{
-                    
-                }
-                
+//                printf("\n\n [ 1 ] Adicionar enlace\n [ 2 ] Editar enlace\n [ 3 ] Remover enlace \n Selecione um item (:menu para voltar):");
+//                scanf("%9s",option);
+//                if (strcmp(option, "1")==0) {
+//                    linkr l;
+//                    if (addLink(l)) {
+//                        printf("\n\nEnlace adicionado!!\n\n");
+//                    }else{
+//                        printf("\n\nEnlace já existente!!\n\n");
+//                    }
+//                    strcpy(option, ":menu");
+//                }else if (strcmp(option, "2")==0) {
+//                    editLink(conn, "");
+//                    strcpy(option, ":menu");
+//                }else if (strcmp(option, "3")==0) {
+//                    
+//                    if(removeLink(conn, "")){
+//                        printf("!!Enlace removido!!");
+//                    }else{
+//                        printf("!!Enlace não removido!!");
+//                    }
+//                    strcpy(option, ":menu");
+//   
+//                }else{
+//                    
+//                }
+//                
             }
             if (strcmp(option, "2")==0) {
                 println(5);
