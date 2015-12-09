@@ -43,6 +43,7 @@ typedef struct Package{
     int status;
     int port;
     int packageId;
+    char timestamp[15];
     int senderPort;
 }Package;
 
@@ -92,6 +93,7 @@ typedef struct connections{
     struct uploadSocket uploadSocket;
     struct downloadSocket downloadSocket;
     struct linkr routingTable[MAX_LINKS][MAX_LINKS];
+    char timestamp[15];    
 }connections;
 
 

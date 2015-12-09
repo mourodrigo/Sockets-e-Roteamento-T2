@@ -285,7 +285,7 @@ uploadSocket newSendRequestForPackage(Package p){
 int sendPackageWithRequest(uploadSocket sendRequest){
     
     int sendTries = SEND_TRIES;
-    if (sendRequest.package.type==PACKAGE_TYPE_BROADCAST) {
+    if (sendRequest.package.type==PACKAGE_TYPE_BROADCAST || sendRequest.package.type==PACKAGE_TYPE_BROADCAST_ERROR) {
         sendTries=1;
     }
     int status = 0;
@@ -318,7 +318,7 @@ int sendPackageWithRequest(uploadSocket sendRequest){
             if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s",   sendRequest.buf);
             
             Package p = packageFromString(sendRequest.buf);
-            if (!(p.type==PACKAGE_TYPE_BROADCAST_ACK)) {
+            if (!(p.type==PACKAGE_TYPE_BROADCAST_ACK || p.type==PACKAGE_TYPE_BROADCAST_ERROR)) {
                 receivingBuffer[receivingBufferIndex]=p;
                 receivingBuffer[receivingBufferIndex].status=PACKAGE_STATUS_READY;
                 receivingBufferIndex++;
@@ -483,92 +483,116 @@ int isBetterLink(linkr a,linkr b){
     }
 }
 
+void updateRoutingTableTimeStamp(){
+    strcpy(conn.timestamp, time_stamp());
+}
+
 void updateRoutingTableWithPackage(Package p){
     char *token;
     char *rest = p.message;
     
-    while((token = strtok_r(rest, "|", &rest)))
-    {
-        char *packageToken;
-        char *packagerest = token;
+    if (strcmp(p.timestamp, conn.timestamp)<=0 && p.type!=PACKAGE_TYPE_BROADCAST_ERROR) {
+        printf("\n!!Pacote broadcast descartado");
+    }else{
+        printf("\nPacote broadcast aceito");
         
-        char strLink[30];
-        strcpy(strLink, token);
-
-        linkr l;
-        int i=0;
-        while((packageToken = strtok_r(packagerest, "-", &packagerest))){
-            switch (i) {
-                case 0:
-                    l.from=atoi(packageToken);
-                    break;
-                case 1:
-                    l.to=atoi(packageToken);
-                    break;
-                case 2:
-                    l.cost=atoi(packageToken);
-                    break;
-            }
-            i++;
-        }
-        l.remoteId=p.localId;
-        int indxOfLink = indexOfLinkInConnections(l);
-        if (indxOfLink>=0) {
-            if (conn.linksList[indxOfLink].remoteId==p.localId||conn.linksList[indxOfLink].remoteId==99) {
-                if (((conn.linksList[indxOfLink].from==p.localId && conn.linksList[indxOfLink].to==conn.selfID)
-                    ||(conn.linksList[indxOfLink].to==p.localId && conn.linksList[indxOfLink].to==conn.selfID))
-                    
-                    && conn.linksList[indxOfLink].isDirectlyConnected==0) {
-                    conn.linksList[indxOfLink].isDirectlyConnected=1;
-                }
-                conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
-            }else{
-                printf("\nAAAAAAAAAAAAAAAAAAAAA");
-                printf("\n%s\n", stringFromPackage(p));
-                printf("\nA conn.linksList[indxOfLink].remoteId %d", conn.linksList[indxOfLink].remoteId);
-                printlink(l);
-                exit(0);
-                
-            }
+        while((token = strtok_r(rest, "|", &rest)))
+        {
+            char *packageToken;
+            char *packagerest = token;
             
-        }else{
-            if (isBetterLink(l, conn.routingTable[l.from][l.to])
-                &&isBetterLink(l, conn.routingTable[l.to][l.from])
-                &&isBetterLink(l, conn.routingTable[conn.selfID][l.to])
-                ) {
-                router r = routerOfIndex(l.to, conn.routerList); //l.from?!
-                if (r.id>=0 && (l.from==conn.selfID || l.to==conn.selfID) && r.port<0){
-                    while (r.id>=0) {
-                        removeRouter(&conn, r);
-                        r = routerOfIndex(l.to, conn.routerList);
+            char strLink[30];
+            strcpy(strLink, token);
+            
+            linkr l;
+            int i=0;
+            while((packageToken = strtok_r(packagerest, "-", &packagerest))){
+                switch (i) {
+                    case 0:
+                        l.from=atoi(packageToken);
+                        break;
+                    case 1:
+                        l.to=atoi(packageToken);
+                        break;
+                    case 2:
+                        l.cost=atoi(packageToken);
+                        break;
+                    case 3:
+                        l.isDirectlyConnected=atoi(packageToken);
+                        break;
+                }
+                i++;
+            }
+            l.remoteId=p.localId;
+            int indxOfLink = indexOfLinkInConnections(l);
+            if (p.type==PACKAGE_TYPE_BROADCAST_ERROR) {
+                    removeAllId(l.from);
+            }else{
+                if (indxOfLink>=0) {
+                    if (conn.linksList[indxOfLink].remoteId==p.localId||conn.linksList[indxOfLink].remoteId==99) {
+                        if (((conn.linksList[indxOfLink].from==p.localId && conn.linksList[indxOfLink].to==conn.selfID)
+                             ||(conn.linksList[indxOfLink].to==p.localId && conn.linksList[indxOfLink].to==conn.selfID))
+                            
+                            && conn.linksList[indxOfLink].isDirectlyConnected==0) {
+                            conn.linksList[indxOfLink].isDirectlyConnected=1;
+                        }
+                        conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
+                        updateRoutingTableTimeStamp();
+                        
+                    }else{
+                        printf("\nAAAAAAAAAAAAAAAAAAAAA");
+                        printf("\n%s\n", stringFromPackage(p));
+                        printf("\nA conn.linksList[indxOfLink].remoteId %d", conn.linksList[indxOfLink].remoteId);
+                        printlink(l);
+                        exit(0);
+                        
                     }
-                }
-                if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
-                    r.port = p.senderPort;
-                    strcpy(r.ip, p.senderIP);
-                    r.id = p.localId;
-                    addRouter(&conn, r);
-                    l.isDirectlyConnected=1;
-                }else if(r.id<0 && !(l.from==conn.selfID || l.to==conn.selfID)){
-                    router newr;
-                    newr.id = l.to;
-                    sprintf(newr.ip, "%d",l.from);
-                    newr.port = -1;
-                    l.isDirectlyConnected=0;
-                    addRouter(&conn, newr);
+                    
                 }else{
-                    l.isDirectlyConnected=0;
+                    if (isBetterLink(l, conn.routingTable[l.from][l.to])
+                        &&isBetterLink(l, conn.routingTable[l.to][l.from])
+                        &&isBetterLink(l, conn.routingTable[conn.selfID][l.to])
+                        ) {
+                        router r = routerOfIndex(l.to, conn.routerList); //l.from?!
+                        if (r.id>=0 && (l.from==conn.selfID || l.to==conn.selfID) && r.port<0){
+                            while (r.id>=0) {
+                                removeRouter(&conn, r);
+                                r = routerOfIndex(l.to, conn.routerList);
+                            }
+                        }
+                        if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
+                            r.port = p.senderPort;
+                            strcpy(r.ip, p.senderIP);
+                            r.id = p.localId;
+                            addRouter(&conn, r);
+                            l.isDirectlyConnected=1;
+                        }else if(r.id<0 && !(l.from==conn.selfID || l.to==conn.selfID)){
+                            router newr;
+                            newr.id = l.to;
+                            sprintf(newr.ip, "%d",l.from);
+                            newr.port = -1;
+                            l.isDirectlyConnected=0;
+                            addRouter(&conn, newr);
+                        }else{
+                            l.isDirectlyConnected=0;
+                        }
+                        if (addLink(l)) {
+                            printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+                            conn.routingTable[l.from][l.to]=l;
+                            conn.routingTable[l.to][l.from]=l;
+                            updateRoutingTableTimeStamp();
+                            presentRoutingTable(conn.routingTable);
+                        }
+                        
+                    }
+                    
                 }
-                if (addLink(l)) {
-                    printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
-                    conn.routingTable[l.from][l.to]=l;
-                    conn.routingTable[l.to][l.from]=l;
-                    presentRoutingTable(conn.routingTable);
-                }
-                }
-                
             }
         }
+
+
+    }
+    
 }
 void setackPackage(Package p){
     printf("\n<=============================\n| Mensagem %d com sucesso!! \n<=============================\n", p.packageId);
@@ -604,6 +628,10 @@ void * routing(){
                 case PACKAGE_TYPE_BROADCAST:
                     updateRoutingTableWithPackage(p);
                     break;
+                case PACKAGE_TYPE_BROADCAST_ERROR:
+                    updateRoutingTableWithPackage(p);
+                    break;
+
                 case PACKAGE_TYPE_MESSAGE:
                     printMessagePackage(p);
                     break;
@@ -631,12 +659,12 @@ Package ackPackage(Package p){
     p.destinationId += p.localId;
     p.localId = p.destinationId-p.localId;
     p.destinationId = p.destinationId - p.localId;
- 
+    strcpy(p.timestamp, time_stamp());
     router r = routerOfIndex(p.destinationId, conn.routerList);
 
     strcpy(p.destinationIP, r.ip);
     p.port = r.port;
-    if (p.type==PACKAGE_TYPE_BROADCAST) {
+    if (p.type==PACKAGE_TYPE_BROADCAST || p.type==PACKAGE_TYPE_BROADCAST_ERROR) {
         p.type=PACKAGE_TYPE_BROADCAST_ACK;
     }else{
         p.type = PACKAGE_TYPE_ACK;
@@ -668,31 +696,34 @@ Package packageFromString(char *s){
                 p.packageId = atoi(token);
                 break;
             case 3:
-                strcpy(p.destinationIP, token);
+                strcpy(p.timestamp, token);
                 break;
             case 4:
-                p.port = atoi(token);
+                strcpy(p.destinationIP, token);
                 break;
             case 5:
-                p.ttl = atoi(token);
+                p.port = atoi(token);
                 break;
             case 6:
-                p.type = atoi(token);
+                p.ttl = atoi(token);
                 break;
             case 7:
-                p.senderPort = atoi(token);
+                p.type = atoi(token);
                 break;
             case 8:
+                p.senderPort = atoi(token);
+                break;
+            case 9:
                 strcpy(p.senderIP, token);
                 if (p.type==PACKAGE_TYPE_FORWARD) {
                     strcpy(p.message, rest);
                 }
                 break;
-            case 9:
+            case 10:
                 strcpy(p.message, token);
                 break;
         }
-        if (i==8 && p.type==PACKAGE_TYPE_FORWARD) break;
+        if (i==9 && p.type==PACKAGE_TYPE_FORWARD) break;
         i++;
         
     }
@@ -706,10 +737,11 @@ Package packageFromString(char *s){
 char * stringFromPackage(Package p){
     char *str;
     char separator = '@';
-    asprintf(&str, "%d%c%d%c%d%c%s%c%d%c%d%c%d%c%d%c%s%c%s",
+    asprintf(&str, "%d%c%d%c%d%c%s%c%s%c%d%c%d%c%d%c%d%c%s%c%s",
              p.localId,separator,
              p.destinationId,separator,
              p.packageId,separator,
+             p.timestamp,separator,
              p.destinationIP,separator,
              p.port,separator,
              p.ttl,separator,
@@ -758,12 +790,40 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
     return str;
 }
 
-void cancelAllBroadcast(){
+
+char * getLinkStringToDelete(connections conn, int l){
+    char *str = "";
+    asprintf(&str, "%s%d-%d-%d-%d|",str,l,l,l, BROADCAST_CODE_LINK_ERROR);
+    return str;
+}
+
+
+void cancelAllBroadcastForDelete(int l){
     for (int index = 0; index<sendingBufferIndex; index++) {
         if (sendingBuffer[index].status==PACKAGE_STATUS_READY && sendingBuffer[index].type == PACKAGE_STATUS_READY) {
             sendingBuffer[index].status=PACKAGE_STATUS_DEAD;
         }
     }
+    for (int x = 0; x<conn.linksCount; x++) {
+        
+    if (conn.linksCount>0 && conn.linksList[x].isDirectlyConnected==1) {
+            Package p;
+            p.localId = conn.selfID;
+            p.destinationId = conn.linksList[x].to;
+            p.packageId = getRequestIdForPackage();
+            strcpy(p.destinationIP, routerOfIndex(conn.linksList[x].to, conn.routerList).ip);
+            p.ttl=MAX_TTL_BROADCAST;
+            p.type=PACKAGE_TYPE_BROADCAST_ERROR;
+            p.senderPort=conn.selfRouter.port;
+            strcpy(p.senderIP, conn.selfRouter.ip);
+            strcpy(p.timestamp, time_stamp());
+            strcpy(p.message, getLinkStringToDelete(conn, l));
+            p.status=PACKAGE_STATUS_READY;
+            p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
+            addSendPackageToBuffer(p);
+        }
+    }
+
 }
 
 
@@ -781,6 +841,7 @@ void * sendLinksBroadcast(){
             p.type=PACKAGE_TYPE_BROADCAST;
             p.senderPort=conn.selfRouter.port;
             strcpy(p.senderIP, conn.selfRouter.ip);
+            strcpy(p.timestamp, time_stamp());
             strcpy(p.message, getLinkStringToBroadCast(conn,conn.linksList[x]));
             p.status=PACKAGE_STATUS_READY;
             p.port = routerOfIndex(conn.linksList[x].to, conn.routerList).port;
@@ -793,7 +854,7 @@ void * sendLinksBroadcast(){
             }
         }
         if (x>=conn.linksCount-1) {
-            sleep(2);
+            sleep(3);
             if (conn.linksCount<=1) {
                 sleep(5);
                 if (conn.linksCount<=1) {
@@ -863,7 +924,7 @@ int indexForBidirectionalLink(linkr l){
 }
 
 Package routedPackage(Package p){
-    if (p.type==PACKAGE_TYPE_BROADCAST) {
+    if (p.type==PACKAGE_TYPE_BROADCAST || p.type==PACKAGE_TYPE_BROADCAST_ERROR) {
         return p;
     }
     linkr l= connectedLinkToDestinationId(p.localId, p.destinationId,0);
@@ -887,6 +948,7 @@ Package routedPackage(Package p){
             routedPackage.packageId = getRequestIdForPackage();
             strcpy(routedPackage.destinationIP, r.ip);
             routedPackage.ttl=p.ttl--;
+            strcpy(routedPackage.timestamp, time_stamp());
             routedPackage.type=PACKAGE_TYPE_FORWARD;
             routedPackage.senderPort=conn.selfRouter.port;
             strcpy(routedPackage.senderIP, conn.selfRouter.ip);
@@ -1021,6 +1083,7 @@ void chat(struct router destinationRouter, connections conn){
         strcpy(p.destinationIP, destinationRouter.ip);
         p.ttl=MAX_TTL;
         p.type=PACKAGE_TYPE_MESSAGE;
+        strcpy(p.timestamp, time_stamp());
         strcpy(p.senderIP, conn.selfRouter.ip);
         p.senderPort  = conn.selfRouter.port;
         p.status=PACKAGE_STATUS_READY;
@@ -1058,12 +1121,14 @@ void removeAllId(int idx){
                 conn.linksList[conn.linksCount-1]=newLink;
                 conn.linksCount--;
             }
-            cancelAllBroadcast();
+            cancelAllBroadcastForDelete(idx);
 
             printf("\n!!Enlace para %d removido!!", idx);
             presentRoutingTable(conn.routingTable);
         }
     }
+    updateRoutingTableTimeStamp();
+
 }
 
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
