@@ -97,6 +97,18 @@ typedef struct connections{
 }connections;
 
 
+typedef struct debug_std{
+    int DEBUG_STD_SENDING;
+    int DEBUG_STD_RECEIVING;
+    int DEBUG_STD_ACK;
+    int DEBUG_STD_TIMESTAMP_ACK;
+    int DEBUG_STD_ROUTER_ADD_REMOVE;
+    int DEBUG_STD_LINK_ADD_REMOVE;
+    int DEBUG_STD_ROUTING_TABLE;
+    int DEBUG_STD_NACK;
+    int DEBUG_STD_FATAL_ERRORS;
+}debug_std;
+
 void * startDownListen();
 void routerDidReceiveMessage(char message[1025]);
 #pragma mark - ROUTER ASSEMBLY

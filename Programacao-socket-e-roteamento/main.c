@@ -18,6 +18,7 @@ Package receivingBuffer[ROUTING_BUFFER_SIZE];
 int sendingBufferIndex, receivingBufferIndex;
 
 struct connections conn;
+struct debug_std std;
 int autoIncrementalLocalRequestId;
 
 int stdOutDebugLevel;
@@ -106,7 +107,7 @@ int removeRouter(connections *conn, router r){
     }
 
     if (indx<0) {
-        printf("Nó nao encontrado");
+        if(std.DEBUG_STD_ROUTER_ADD_REMOVE) printf("Nó %d nao encontrado para remoção",indx);
     }else if (indx>=0 && r.id!=conn->selfID) {
         router newRouter;
         newRouter.id=0;
@@ -137,15 +138,6 @@ int addLink(linkr link){
         l = link;
     }
     if (indexOfLinkInConnections(l)<0) {
-        /*
-        if (routerOfIndex(l.to, conn.routerList).id<0) {
-            router r;
-            r.id = l.to;
-            sprintf(r.ip, "%d",l.from);
-            r.port = -1;
-            addRouter(&conn, r);
-
-        }*///teletar?
         l.ttl = MAX_LINK_TTL;
         conn.linksList[conn.linksCount] = l;
         conn.linksCount++;
@@ -250,7 +242,7 @@ uploadSocket newSendRequestForPackage(Package p){
         newRequest.slen = sizeof(newRequest.si_other);
         newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (newRequest.s == -1){
-            printf("\nAguardando socket livre para envio...");
+            if(std.DEBUG_STD_FATAL_ERRORS) printf("\nAguardando socket livre para envio...");
             sleep(1);
         }else{
             
@@ -262,7 +254,7 @@ uploadSocket newSendRequestForPackage(Package p){
             {
                 newRequest.requestId=-1;
                 break;
-                if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
+                if(std.DEBUG_STD_FATAL_ERRORS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
                 
             }else{
                 newRequest.package = p;
@@ -299,11 +291,11 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         status = 0;
         if (sendto(sendRequest.s, messageString, strlen(messageString) , 0 , (struct sockaddr *) &sendRequest.si_other, sendRequest.slen)==-1)
         {
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\Erro ao enviar mensagem para %d:%d",sendRequest.package.destinationId, sendRequest.port);
+            if(std.DEBUG_STD_NACK)printf("\Erro ao enviar mensagem para %d:%d",sendRequest.package.destinationId, sendRequest.port);
             return status;
         }else{
             status++;
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n-> %s",stringFromPackage(sendRequest.package));
+            if(std.DEBUG_STD_SENDING)printf("\n-> %s",stringFromPackage(sendRequest.package));
         }
         //LIMPA O BUFFER DE ENVIO
         memset(sendRequest.buf,'\0', MAX_USER_MSG_SIZE);
@@ -311,11 +303,11 @@ int sendPackageWithRequest(uploadSocket sendRequest){
         //AGUARDA RECEBIMENTO DO ACK
         if (recvfrom(sendRequest.s, sendRequest.buf, MAX_USER_MSG_SIZE, 0, (struct sockaddr *) &sendRequest.si_other, &sendRequest.slen) == -1)
         {
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("\n!-! FALHA na tentativa de receber ACK para o pacote %s",messageString);
+            if(std.DEBUG_STD_NACK)printf("\n!-! FALHA na tentativa de receber ACK para o pacote %s",messageString);
             closeUp(sendRequest);
 
         }else{
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<=> Confirmação de recebimento: %s",   sendRequest.buf);
+            if(std.DEBUG_STD_ACK)printf("\n<=> Confirmação de recebimento: %s",   sendRequest.buf);
             
             Package p = packageFromString(sendRequest.buf);
             if (!(p.type==PACKAGE_TYPE_BROADCAST_ACK || p.type==PACKAGE_TYPE_BROADCAST_ERROR)) {
@@ -333,9 +325,6 @@ int sendPackageWithRequest(uploadSocket sendRequest){
 
 void closeUp(uploadSocket up){
     close(up.s);
-#ifdef DEBUG_LEVEL_3
-    printf("Up Client Closed\n");
-#endif
 }
 
 void addSendPackageToBuffer(Package p){
@@ -377,7 +366,7 @@ downloadSocket initDownClient(downloadSocket down){
     //CRIA O SOCKET
     if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        printf("\nAguardando socket livre para download..."); //teletar
+        if(std.DEBUG_STD_FATAL_ERRORS)printf("\nAguardando socket livre para download..."); //teletar
         sleep(1);
         return initDownClient(down);
     }else{
@@ -402,7 +391,6 @@ downloadSocket initDownClient(downloadSocket down){
 
 void * startDownListen(void){
     
-    printf("Router %d listening for data on port %d\n",conn.downloadSocket.idNumber,conn.downloadSocket.port);
     while(1)
     {
         
@@ -428,13 +416,13 @@ void * startDownListen(void){
             //printf("\nerro recvfrom() timeout\n");
         }else{
             //IMPRESSAO DO PACOTE RECEBIDO
-            if (stdOutDebugLevel>=DEBUG_PACKAGE_ROUTING)printf("\n<- %s" , conn.downloadSocket.buf);
+            if(std.DEBUG_STD_RECEIVING)printf("\n<- %s" , conn.downloadSocket.buf);
             
             //ADICIONA NO BUFFER
             if (receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status==PACKAGE_STATUS_DONE) {
                 receivingBufferIndex=1;
             }else if(receivingBufferIndex==ROUTING_BUFFER_SIZE && receivingBuffer[1].status!=PACKAGE_STATUS_DONE){
-                printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
+                if(std.DEBUG_STD_FATAL_ERRORS)printf("!!!!!!BUFFER DE RECEBIMENTO CHEIO!!!!!");
                 exit(0);
             }
             
@@ -462,10 +450,6 @@ void * startDownListen(void){
 
 void closeDown(downloadSocket down){
     close(down.s);
-    
-#ifdef DEBUG_LEVEL_3
-    printf("Down Client Closed\n");
-#endif
 }
 
 
@@ -492,9 +476,9 @@ void updateRoutingTableWithPackage(Package p){
     char *rest = p.message;
     
     if (strcmp(p.timestamp, conn.timestamp)<=0 && p.type!=PACKAGE_TYPE_BROADCAST_ERROR) {
-        printf("\n!!Pacote broadcast descartado");
+        if(std.DEBUG_STD_TIMESTAMP_ACK) printf("\n!!Pacote broadcast descartado");
     }else{
-        printf("\nPacote broadcast aceito");
+        if(std.DEBUG_STD_TIMESTAMP_ACK) printf("\nPacote broadcast aceito");
         
         while((token = strtok_r(rest, "|", &rest)))
         {
@@ -539,15 +523,7 @@ void updateRoutingTableWithPackage(Package p){
                         conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
                         updateRoutingTableTimeStamp();
                         
-                    }else{
-                        printf("\nAAAAAAAAAAAAAAAAAAAAA");
-                        printf("\n%s\n", stringFromPackage(p));
-                        printf("\nA conn.linksList[indxOfLink].remoteId %d", conn.linksList[indxOfLink].remoteId);
-                        printlink(l);
-                        exit(0);
-                        
                     }
-                    
                 }else{
                     if (isBetterLink(l, conn.routingTable[l.from][l.to])
                         &&isBetterLink(l, conn.routingTable[l.to][l.from])
@@ -577,11 +553,11 @@ void updateRoutingTableWithPackage(Package p){
                             l.isDirectlyConnected=0;
                         }
                         if (addLink(l)) {
-                            printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
+                            if(std.DEBUG_STD_ROUTER_ADD_REMOVE) printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
                             conn.routingTable[l.from][l.to]=l;
                             conn.routingTable[l.to][l.from]=l;
                             updateRoutingTableTimeStamp();
-                            presentRoutingTable(conn.routingTable);
+                            if(std.DEBUG_STD_ROUTING_TABLE) presentRoutingTable(conn.routingTable);
                         }
                         
                     }
@@ -982,7 +958,7 @@ void * flushSendBuffer(){
                 switch (status) {
                     case REQUEST_STATUS_ERROR:
                         
-                        printf("\n!! ERRO AO ENVIAR PACOTE %s",stringFromPackage(sendRequest.package));
+                        if(std.DEBUG_STD_NACK)printf("\n!! ERRO AO ENVIAR PACOTE %s",stringFromPackage(sendRequest.package));
                         sendingBuffer[index].ttl--;
                         
                         //   exit(0);
@@ -991,7 +967,7 @@ void * flushSendBuffer(){
                         sendingBuffer[index].ttl--;
                         if (sendingBuffer[index].ttl<=0) {
                             sendingBuffer[index].status= PACKAGE_STATUS_DEAD;
-                            printf("\n!!-!! NAO É POSSIVEL ENVIAR PARA ESTE DESTINO %s",stringFromPackage(sendingBuffer[index]));
+                            if(std.DEBUG_STD_NACK) printf("\n!!-!! NAO É POSSIVEL ENVIAR PARA ESTE DESTINO %s",stringFromPackage(sendingBuffer[index]));
                             removeAllId(sendingBuffer[index].destinationId);
                         }else if (sendingBuffer[index].status!=PACKAGE_STATUS_DEAD) {
                                 sendingBuffer[index].status=PACKAGE_STATUS_READY;
@@ -1103,7 +1079,7 @@ void removeAllId(int idx){
 
         if (conn.routerList[x].id==idx /*|| strcmp(conn.routerList[x].ip,ipid)==0*/) {
             removeRouter(&conn, conn.routerList[x]);
-            printf("\n!!No %d removido!!", idx);
+            if(std.DEBUG_STD_LINK_ADD_REMOVE)printf("\n!!No %d removido!!", idx);
         }
     }
     for (int x=0; x<conn.linksCount; x++) {
@@ -1123,7 +1099,7 @@ void removeAllId(int idx){
             }
             cancelAllBroadcastForDelete(idx);
 
-            printf("\n!!Enlace para %d removido!!", idx);
+            if(std.DEBUG_STD_LINK_ADD_REMOVE) printf("\n!!Enlace para %d removido!!", idx);
             presentRoutingTable(conn.routingTable);
         }
     }
@@ -1172,32 +1148,6 @@ void interface(connections *conn){
                 printLinks(*conn);
                 printf("=====[Detalhamento dos nos encontrados]=====\n");
                 printRouters(*conn);
-//                printf("\n\n [ 1 ] Adicionar enlace\n [ 2 ] Editar enlace\n [ 3 ] Remover enlace \n Selecione um item (:menu para voltar):");
-//                scanf("%9s",option);
-//                if (strcmp(option, "1")==0) {
-//                    linkr l;
-//                    if (addLink(l)) {
-//                        printf("\n\nEnlace adicionado!!\n\n");
-//                    }else{
-//                        printf("\n\nEnlace já existente!!\n\n");
-//                    }
-//                    strcpy(option, ":menu");
-//                }else if (strcmp(option, "2")==0) {
-//                    editLink(conn, "");
-//                    strcpy(option, ":menu");
-//                }else if (strcmp(option, "3")==0) {
-//                    
-//                    if(removeLink(conn, "")){
-//                        printf("!!Enlace removido!!");
-//                    }else{
-//                        printf("!!Enlace não removido!!");
-//                    }
-//                    strcpy(option, ":menu");
-//   
-//                }else{
-//                    
-//                }
-//                
             }
             if (strcmp(option, "2")==0) {
                 println(5);
@@ -1268,13 +1218,13 @@ int main(int argc, const char * argv[]) {
             printf("\n Usage: ./main <router id>\n");
     }else{
 
+        std.DEBUG_STD_ACK=std.DEBUG_STD_FATAL_ERRORS=std.DEBUG_STD_LINK_ADD_REMOVE=std.DEBUG_STD_NACK=std.DEBUG_STD_RECEIVING=std.DEBUG_STD_ROUTER_ADD_REMOVE=std.DEBUG_STD_ROUTING_TABLE=std.DEBUG_STD_SENDING=std.DEBUG_STD_TIMESTAMP_ACK = 1;
+        
         conn.selfID = atoi(argv[1]);
-
+        
         autoIncrementalLocalRequestId=0;
         sendingBufferIndex=receivingBufferIndex=0;
         
-        stdOutDebugLevel = DEBUG_ALL;
-
         prepareRoutingTable(&conn);
         
         //CONFIG FILE READING
