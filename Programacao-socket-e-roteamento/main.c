@@ -1140,7 +1140,7 @@ void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
     printRouters(conn);
 
     
-    printf("\n\n=====[TABELA DE ROTEAMENTO]===== Timestamp: %s\n\n   ",time_stamp());
+    printf("\n\n=====[TABELA DE ROTEAMENTO]===== Timestamp: %s\n\n   ",conn.timestamp);
     for (int y=0; y<conn.routerCount; y++) {
         printf(" %2d ",conn.routerList[y].id);
     }
