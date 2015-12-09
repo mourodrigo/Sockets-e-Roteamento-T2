@@ -270,7 +270,7 @@ uploadSocket newSendRequestForPackage(Package p){
                 
                 struct timeval tv;
 //                tv.tv_sec       = ;
-                tv.tv_usec      = 500;
+                tv.tv_usec      = 100;
                 
                 if (setsockopt(newRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
                     perror("send Message Socket Error");
@@ -525,7 +525,7 @@ void updateRoutingTableWithPackage(Package p){
             }else{
                 printf("\nAAAAAAAAAAAAAAAAAAAAA");
                 printf("\n%s\n", stringFromPackage(p));
-                printf("\nAAAAAAAAAAAAAAAAAAAAA");
+                printf("\nA conn.linksList[indxOfLink].remoteId %d", conn.linksList[indxOfLink].remoteId);
                 printlink(l);
                 exit(0);
                 
@@ -749,7 +749,7 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
     int y=conn.linksCount-1;
     asprintf(&str, "%s%d-%d-%d|",str,l.to,l.from,l.cost);
     while (y>=0) {
-        if (/*l.to!=conn.linksList[y].from && l.to!=conn.linksList[y].to*/l.to!=conn.linksList[y].remoteId) {
+        if (/*l.to!=conn.linksList[y].from && */l.to!=conn.linksList[y].to && l.to!=conn.linksList[y].remoteId) {
             asprintf(&str, "%s%d-%d-%d|",str,conn.linksList[y].from,conn.linksList[y].to,conn.linksList[y].cost+l.cost);
         }
         y--;
@@ -787,13 +787,13 @@ void * sendLinksBroadcast(){
             addSendPackageToBuffer(p);
         }else{
             conn.linksList[x].ttl--;
-            if (conn.linksList[x].ttl<0) {
+            if (conn.linksList[x].ttl<0 && conn.linksList[x].isDirectlyConnected==0) {
                 removeAllId(conn.linksList[x].to);
                 removeAllId(conn.linksList[x].from);
             }
         }
         if (x>=conn.linksCount-1) {
-            sleep(3);
+            sleep(2);
             if (conn.linksCount<=1) {
                 sleep(5);
                 if (conn.linksCount<=1) {
