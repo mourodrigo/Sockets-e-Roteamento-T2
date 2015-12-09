@@ -1019,11 +1019,15 @@ void printLinks(connections conn){
     }
 }
 
-router chooseDestination(connections conn){
-    printRouters(conn);
+router chooseDestination(){
     router r;
     r.id=-1;
     while (r.id<0) {
+        printf("\n----------------------\n");
+        for (int x=0; x<conn.routerCount; x++) {
+            printf(" %d ",conn.routerList[x].id);
+        }
+
         char option[10] = "";
         
         printf("\nEscolha o id do destinatário: ");
@@ -1038,18 +1042,18 @@ router chooseDestination(connections conn){
     return r;
 }
 
-void chat(struct router destinationRouter, connections conn){
+void chat(struct router destinationRouter){
 
     char message[MAX_USER_MSG_SIZE];
     
-    sleep(1);
-    while (1) {
+    sleep(0.5);
+//    while (1) {
         int msgid=getRequestIdForPackage();
         
         printf("\n( :menu to exit) Insira o conteúdo da mensagem id %d para roteador id %d: ", msgid, destinationRouter.id);
         scanf("%s",message);
         if (strcmp(":menu", message)==0) {
-            break;
+//            break;
         }
         
         Package p;
@@ -1069,7 +1073,7 @@ void chat(struct router destinationRouter, connections conn){
 
         
         
-    }
+//    }
 }
 
 void removeAllId(int idx){
@@ -1108,14 +1112,7 @@ void removeAllId(int idx){
 }
 
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
-    
-    println(5); //teletar
-    printf("\n\n=====[Lista de enlaces]=====\n");
-    printLinks(conn);
-    printf("\n\n=====[Detalhamento dos enlaces]=====\n");
-    printRouters(conn);
-
-    
+   
     printf("\n\n=====[TABELA DE ROTEAMENTO]===== Timestamp: %s\n\n   ",conn.timestamp);
     for (int y=0; y<conn.routerCount; y++) {
         printf(" %2d ",conn.routerList[y].id);
@@ -1138,56 +1135,111 @@ void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
         
 }
 
-void interface(connections *conn){
+void interface(){
     char option[10] = ":menu";
     while (1) {
 
             if (strcmp(option, "1")==0) {
-                println(5);
-                printf("\n\n=====[Tabela de roteamento]=====\n");
-                printLinks(*conn);
-                printf("=====[Detalhamento dos nos encontrados]=====\n");
-                printRouters(*conn);
+                router r;
+                r = chooseDestination();
+                if (r.id>0) {
+                    chat(r);
+                }
+                
             }
             if (strcmp(option, "2")==0) {
                 println(5);
-                printf("\n\n=====[Lista de enlaces]=====\n");
-                printLinks(*conn);
-                printf("\n\n=====[Detalhamento dos enlaces]=====\n");
-                printRouters(*conn);
-                router r;
-                r = chooseDestination(*conn);
-                if (r.id>0) {
-                    chat(r, *conn);
-                }
-
+                printf("\n\n=====[Tabela de roteamento]=====\n");
+                printLinks(conn);
+                printf("=====[Detalhamento dos nos encontrados]=====\n");
+                printRouters(conn);
             }
             if (strcmp(option, "3")==0) {
-                char package[MAX_PACKAGE_SIZE];
-                printf("\n Insira o pacote a enviar:");
-                scanf("%s",package);
-                Package new = packageFromString((char*)package);
-                new.status=PACKAGE_STATUS_READY;
-                addSendPackageToBuffer(new);
-            }
-            if (strcmp(option, "4")==0) {
-                presentRoutingTable(conn->routingTable);
+                presentRoutingTable(conn.routingTable);
             }
             if (strcmp(option, "4")==0) {
                 println(5);
-                printf("\n\n=====[Lista de enlaces]=====\n");
-                printLinks(*conn);
-                printf("\n\n=====[Detalhamento dos enlaces]=====\n");
-                printRouters(*conn);
+                printf("\n\n=====[Tabela de roteamento]=====\n");
+                printLinks(conn);
+                printf("=====[Detalhamento dos nos encontrados]=====\n");
+                printRouters(conn);
+                
+                printf("\n [ 1 ] Adicionar Link");
+                printf("\n [ 2 ] Remover Link");
+                printf("\n [ 3 ] Editar Link");
 
-                presentRoutingTable(conn->routingTable);
+                scanf("%s",option);
+                if (strcmp(option, "1")==0) {
+                    linkr l;
+                    l.from=l.to=-1;
+                    addLink(l);
+                }
+                if (strcmp(option, "2")==0) {
+                    editLink(&conn, "");
+                }
+                if (strcmp(option, "3")==0) {
+                    removeLink(&conn, "");
+                }
+                
             }
+            if (strcmp(option, "5")==0) {
+                printf("\n\n=====[Debug]=====\n");
+                printf("\n 1  DEBUG_STD_SENDING %d ",std.DEBUG_STD_SENDING);
+                printf("\n 2  DEBUG_STD_RECEIVING %d ",std.DEBUG_STD_RECEIVING);
+                printf("\n 3 DEBUG_STD_ACK %d ",std.DEBUG_STD_ACK);
+                printf("\n 4 DEBUG_STD_TIMESTAMP_ACK %d ",std.DEBUG_STD_TIMESTAMP_ACK);
+                printf("\n 5 DEBUG_STD_ROUTER_ADD_REMOVE %d ",std.DEBUG_STD_ROUTER_ADD_REMOVE);
+                printf("\n 6 DEBUG_STD_LINK_ADD_REMOVE %d ",std.DEBUG_STD_LINK_ADD_REMOVE);
+                printf("\n 7 DEBUG_STD_ROUTING_TABLE %d ",std.DEBUG_STD_ROUTING_TABLE);
+                printf("\n 8 DEBUG_STD_NACK %d ",std.DEBUG_STD_NACK);
+                printf("\n 9 DEBUG_STD_FATAL_ERRORS %d \n\nInforme o debug que deseja alterar: ",std.DEBUG_STD_FATAL_ERRORS);
+                int op=0;
+                scanf("%d",&op);
+                switch (op) {
+                    case 1:
+                        std.DEBUG_STD_SENDING=!std.DEBUG_STD_SENDING;
+                        break;
+                    case 2:
+                        std.DEBUG_STD_RECEIVING=!std.DEBUG_STD_RECEIVING;
+                        break;
+
+                    case 3:
+                        std.DEBUG_STD_ACK=!std.DEBUG_STD_ACK;
+                        break;
+
+                    case 4:
+                        std.DEBUG_STD_TIMESTAMP_ACK=!std.DEBUG_STD_TIMESTAMP_ACK;
+                        break;
+
+                    case 5:
+                        std.DEBUG_STD_ROUTER_ADD_REMOVE=!std.DEBUG_STD_ROUTER_ADD_REMOVE;
+                        break;
+
+                    case 6:
+                        std.DEBUG_STD_LINK_ADD_REMOVE=!std.DEBUG_STD_LINK_ADD_REMOVE;
+                        break;
+
+                    case 7:
+                        std.DEBUG_STD_ROUTING_TABLE=!std.DEBUG_STD_ROUTING_TABLE;
+                        break;
+
+                    case 8:
+                        std.DEBUG_STD_NACK=!std.DEBUG_STD_NACK;
+                        break;
+
+                    case 9:
+                        std.DEBUG_STD_FATAL_ERRORS=!std.DEBUG_STD_FATAL_ERRORS;
+                        break;
+
+                }
+            }
+        
 
         
             println(5);
             printf("\n\n==================[ROTEADOR SOCKET UPD]==================\n");
-            printf("[ 1 ] Enlaces e nos conectados\n[ 2 ] Enviar mensagem para cliente\n[ 3 ] Enviar pacote\n");
-            printf("[ 4 ] Tabela de roteamento\nSelecione um item: ");
+            printf("[ 1 ] Enviar mensagem \n[ 2 ] Enlaces e nos conectados \n[ 3 ] Tabela de roteamento \n");
+            printf("[ 4 ] Alterar enlaces \n[ 5 ] Alterar stdout de debug \nSelecione um item:");
         
         scanf("%9s",option);
     }
