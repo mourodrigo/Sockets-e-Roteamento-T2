@@ -501,9 +501,15 @@ void updateRoutingTableWithPackage(Package p){
         int indxOfLink = indexOfLinkInConnections(l);
         if (indxOfLink>=0) {
             if (conn.linksList[indxOfLink].remoteId==p.localId||conn.linksList[indxOfLink].remoteId==99) {
+                if (((conn.linksList[indxOfLink].from==p.localId && conn.linksList[indxOfLink].to==conn.selfID)
+                    ||(conn.linksList[indxOfLink].to==p.localId && conn.linksList[indxOfLink].from==conn.selfID))
+                    
+                    && conn.linksList[indxOfLink].isDirectlyConnected==0) {
+                    conn.linksList[indxOfLink].isDirectlyConnected=1;
+                }
                 conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
             }else{
-                    printf("ne");
+                    printf("AAAAAAAAAAAAAAAAAAAAA");
                     
             }
             
@@ -545,52 +551,6 @@ void updateRoutingTableWithPackage(Package p){
                 
             }
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        /*
-        
-        if (indxOfLink<0) {
-            if (r.id<0 && (l.from==conn.selfID || l.to==conn.selfID)) {
-                r.port = p.senderPort;
-                strcpy(r.ip, p.senderIP);
-                r.id = p.localId;
-                addRouter(&conn, r);
-                l.isDirectlyConnected=1;
-                if (addLink(l)) {
-                    printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
-                    conn.routingTable[l.from][l.to]=l;
-                    conn.routingTable[l.to][l.from]=l;
-                    presentRoutingTable(conn.routingTable);
-                }
-            }else if (isBetterLink(l, conn.routingTable[l.from][l.to])&&
-                      isBetterLink(l, conn.routingTable[l.to][l.from])&&
-                      isBetterLink(l, conn.routingTable[conn.selfID][l.to])){
-                l.isDirectlyConnected=0;
-                if (addLink(l)) {
-                    printf("\n!!Novo enlace adicionado!! %d - %d - %d\n", l.from, l.to, l.cost);
-                    conn.routingTable[l.from][l.to]=l;
-                    conn.routingTable[l.to][l.from]=l;
-                    presentRoutingTable(conn.routingTable);
-                }
-                
-            }
-        }else{
-            conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
-        }
-        
-    }*/
 }
 void setackPackage(Package p){
     printf("\n<=============================\n| Mensagem %d com sucesso!! \n<=============================\n", p.packageId);
@@ -967,7 +927,11 @@ void printRouters(connections conn){
 }
 
 void printlink(linkr l){
-    printf("| FROM: %d | TO: %d | COST: %d | TTL: %d\n",l.from,l.to,l.cost, l.ttl);
+    if (l.isDirectlyConnected==1) {
+        printf("||FROM: %d | TO: %d | COST: %d | TTL: %d\n",l.from,l.to,l.cost, l.ttl);
+    }else{
+        printf("| FROM: %d | TO: %d | COST: %d | TTL: %d\n",l.from,l.to,l.cost, l.ttl);
+    }
 }
 void printLinks(connections conn){
     for (int x=0; x<conn.linksCount; x++) {
