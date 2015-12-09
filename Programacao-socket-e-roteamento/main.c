@@ -245,30 +245,33 @@ uploadSocket newSendRequestForPackage(Package p){
         newRequest.slen = sizeof(newRequest.si_other);
         newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (newRequest.s == -1){
-            die("socket");
-        }
-        
-        memset((char *) &newRequest.si_other, 0, sizeof(newRequest.si_other));
-        newRequest.si_other.sin_family = AF_INET;
-        newRequest.si_other.sin_port = htons(newRequest.port);
-        
-        if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
-        {
-            newRequest.requestId=-1;
-            break;
-            if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
-            
+//            die("socket"); //teletar
+            printf("\nAguardando socket livre...");
         }else{
-            newRequest.package = p;
-            newRequest.requestId = p.localId;
-        
-            struct timeval tv;
-            tv.tv_sec       = 1;
-            tv.tv_usec      = 1000;
             
-            if (setsockopt(newRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
-                perror("send Message Socket Error");
+            memset((char *) &newRequest.si_other, 0, sizeof(newRequest.si_other));
+            newRequest.si_other.sin_family = AF_INET;
+            newRequest.si_other.sin_port = htons(newRequest.port);
+            
+            if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
+            {
+                newRequest.requestId=-1;
+                break;
+                if (stdOutDebugLevel>=DEBUG_REQUEST_FAILS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
+                
+            }else{
+                newRequest.package = p;
+                newRequest.requestId = p.localId;
+                
+                struct timeval tv;
+                tv.tv_sec       = 1;
+                tv.tv_usec      = 1000;
+                
+                if (setsockopt(newRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+                    perror("send Message Socket Error");
+                }
             }
+       
         }
     }
     
