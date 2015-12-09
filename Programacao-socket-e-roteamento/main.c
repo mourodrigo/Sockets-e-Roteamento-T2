@@ -502,7 +502,7 @@ void updateRoutingTableWithPackage(Package p){
         if (indxOfLink>=0) {
             if (conn.linksList[indxOfLink].remoteId==p.localId||conn.linksList[indxOfLink].remoteId==99) {
                 if (((conn.linksList[indxOfLink].from==p.localId && conn.linksList[indxOfLink].to==conn.selfID)
-                    ||(conn.linksList[indxOfLink].to==p.localId && conn.linksList[indxOfLink].from==conn.selfID))
+                    ||(conn.linksList[indxOfLink].to==p.localId && conn.linksList[indxOfLink].to==conn.selfID))
                     
                     && conn.linksList[indxOfLink].isDirectlyConnected==0) {
                     conn.linksList[indxOfLink].isDirectlyConnected=1;
