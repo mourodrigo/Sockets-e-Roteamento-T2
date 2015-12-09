@@ -253,8 +253,8 @@ uploadSocket newSendRequestForPackage(Package p){
             if (inet_aton(newRequest.destination_IP , &newRequest.si_other.sin_addr) == 0)
             {
                 newRequest.requestId=-1;
-                break;
                 if(std.DEBUG_STD_FATAL_ERRORS)printf("inet_aton() failed creating request with port id %d",newRequest.port);
+                break;
                 
             }else{
                 newRequest.package = p;
@@ -1046,7 +1046,7 @@ void chat(struct router destinationRouter){
 
     char message[MAX_USER_MSG_SIZE];
     
-    sleep(0.5);
+    sleep(1);
 //    while (1) {
         int msgid=getRequestIdForPackage();
         
@@ -1297,7 +1297,7 @@ int main(int argc, const char * argv[]) {
         initRouting();
         
         sleep(1); // tempo para o socket de download ser inicializado
-        interface(&conn);
+        interface();
     }
     return 0;
 }
