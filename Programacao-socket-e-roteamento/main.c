@@ -245,8 +245,7 @@ uploadSocket newSendRequestForPackage(Package p){
         newRequest.slen = sizeof(newRequest.si_other);
         newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (newRequest.s == -1){
-//            die("socket"); //teletar
-            printf("\nAguardando socket livre...");
+//            printf("\nAguardando socket livre...");
         }else{
             
             memset((char *) &newRequest.si_other, 0, sizeof(newRequest.si_other));
@@ -367,24 +366,30 @@ downloadSocket initDownClient(downloadSocket down){
     
     down.slen = sizeof(down.si_other);
     
+    
+    
     //CRIA O SOCKET
     if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        die("socket");
+//        printf("\nAguardando socket livre..."); //teletar
+        sleep(1);
+        return initDownClient(down);
+    }else{
+        //ZERA A ESTRUTURA DO SOCKET
+        memset((char *) &down.si_me, 0, sizeof(down.si_me));
+        
+        down.si_me.sin_family = AF_INET;
+        down.si_me.sin_port = htons(down.port);
+        down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+        
+        //INICIA O SOCKET
+        if( bind(down.s , (struct sockaddr*)&down.si_me, sizeof(down.si_me) ) == -1)
+        {
+            die("bind");
+        }
     }
     
-    //ZERA A ESTRUTURA DO SOCKET
-    memset((char *) &down.si_me, 0, sizeof(down.si_me));
     
-    down.si_me.sin_family = AF_INET;
-    down.si_me.sin_port = htons(down.port);
-    down.si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    
-    //INICIA O SOCKET
-    if( bind(down.s , (struct sockaddr*)&down.si_me, sizeof(down.si_me) ) == -1)
-    {
-        die("bind");
-    }
     return down;
 }
 
@@ -770,6 +775,17 @@ void * sendLinksBroadcast(){
         }
         if (x>=conn.linksCount-1) {
             sleep(3);
+            if (conn.linksCount<=1) {
+                sleep(5);
+                if (conn.linksCount<=1) {
+                    prepareRoutingTable(&conn);
+                    //CONFIG FILE READING
+                    conn = readLinks(PATH_LINKS_FILE, conn);
+                    conn = readRouters(PATH_ROUTER_FILE, conn);
+                    addRouter(&conn, conn.selfRouter);
+                }
+
+            }
             x=0;
         }else{
             x++;

@@ -121,9 +121,9 @@ connections readRouters(char filepath[], connections conn){
 
     char line[80];
     FILE *fr;
-
+#ifdef DEBUG_LEVEL_2
     printf ("\nReading file path %s \n", filepath);
-    
+#endif
     fr = fopen (filepath, "r");
     
     if (!fr) {
