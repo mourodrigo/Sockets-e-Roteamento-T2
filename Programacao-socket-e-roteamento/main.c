@@ -87,6 +87,11 @@ router stringToRouter(char *s){
 }
 
 int addRouter(connections *conn, router r){
+    for (int x=0; x<conn->routerCount; x++) {
+        if (conn->routerList[x].id==r.id) {
+            return 0;
+        }
+    }
     conn->routerList[conn->routerCount]=r;
     conn->routerCount++;
     return 1;
@@ -245,7 +250,8 @@ uploadSocket newSendRequestForPackage(Package p){
         newRequest.slen = sizeof(newRequest.si_other);
         newRequest.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (newRequest.s == -1){
-//            printf("\nAguardando socket livre...");
+            printf("\nAguardando socket livre para envio...");
+            sleep(1);
         }else{
             
             memset((char *) &newRequest.si_other, 0, sizeof(newRequest.si_other));
@@ -263,8 +269,8 @@ uploadSocket newSendRequestForPackage(Package p){
                 newRequest.requestId = p.localId;
                 
                 struct timeval tv;
-                tv.tv_sec       = 1;
-                tv.tv_usec      = 1000;
+//                tv.tv_sec       = ;
+                tv.tv_usec      = 500;
                 
                 if (setsockopt(newRequest.s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
                     perror("send Message Socket Error");
@@ -371,7 +377,7 @@ downloadSocket initDownClient(downloadSocket down){
     //CRIA O SOCKET
     if ((down.s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-//        printf("\nAguardando socket livre..."); //teletar
+        printf("\nAguardando socket livre para download..."); //teletar
         sleep(1);
         return initDownClient(down);
     }else{
@@ -517,8 +523,12 @@ void updateRoutingTableWithPackage(Package p){
                 }
                 conn.linksList[indxOfLink].ttl=MAX_LINK_TTL;
             }else{
-                    printf("AAAAAAAAAAAAAAAAAAAAA");
-                    
+                printf("\nAAAAAAAAAAAAAAAAAAAAA");
+                printf("\n%s\n", stringFromPackage(p));
+                printf("\nAAAAAAAAAAAAAAAAAAAAA");
+                printlink(l);
+                exit(0);
+                
             }
             
         }else{
@@ -748,6 +758,15 @@ char * getLinkStringToBroadCast(connections conn, linkr l){
     return str;
 }
 
+void cancelAllBroadcast(){
+    for (int index = 0; index<sendingBufferIndex; index++) {
+        if (sendingBuffer[index].status==PACKAGE_STATUS_READY && sendingBuffer[index].type == PACKAGE_STATUS_READY) {
+            sendingBuffer[index].status=PACKAGE_STATUS_DEAD;
+        }
+    }
+}
+
+
 void * sendLinksBroadcast(){
     int x=0;
     while (1) {
@@ -812,9 +831,13 @@ linkr connectedLinkToDestinationId(int from, int to, int deep){
             shortestNext=conn.linksList[r];
         }
     }
-    if (deep>conn.routerCount) {
+    if (deep>0 && from==conn.selfID) {
         removeAllId(from);
-        removeAllId(to);
+        linkr nil;
+        nil.cost=999;
+        nil.from=nil.to=nil.ttl=nil.remoteId=nil.to=0;
+        return nil;
+//        removeAllId(to); //teletar
     }
     if (shortestNext.isDirectlyConnected) {
         return shortestNext;
@@ -1035,11 +1058,12 @@ void removeAllId(int idx){
                 conn.linksList[conn.linksCount-1]=newLink;
                 conn.linksCount--;
             }
+            cancelAllBroadcast();
+
             printf("\n!!Enlace para %d removido!!", idx);
             presentRoutingTable(conn.routingTable);
         }
     }
-  
 }
 
 void presentRoutingTable(struct linkr routingTable[MAX_LINKS][MAX_LINKS]){
